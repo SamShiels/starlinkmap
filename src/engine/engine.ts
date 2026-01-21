@@ -1,7 +1,7 @@
 import { GLBuffer } from './buffers';
 import { setSizedCanvas } from './canvas';
 import { getGLContext } from './context';
-import { quadSphereIndices, quadSphereInterleaved } from './geometry/quadSphere';
+import { QuadSphereGenerator } from './geometry/quadSphere';
 import { Program } from './shaders';
 import { VertexArray } from './vaos';
 
@@ -54,8 +54,10 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
 
   const program = new Program(gl, VERTEX_SHADER, FRAGMENT_SHADER);
 
-  const vertexBuffer = new GLBuffer(gl, quadSphereInterleaved, { target: 'vertex' });
-  const indexBuffer = new GLBuffer(gl, quadSphereIndices, { target: 'index' });
+  const earthGeo = QuadSphereGenerator.create(1.0, 64);
+
+  const vertexBuffer = new GLBuffer(gl, new Float32Array(earthGeo.vertices), { target: 'vertex' });
+  const indexBuffer = new GLBuffer(gl, new Int16Array(earthGeo.indices), { target: 'index' });
 
   const stride = 5 * Float32Array.BYTES_PER_ELEMENT;
 
@@ -101,7 +103,7 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
     gl.uniform1f(timeLocation, time);
     gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
     gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
-    gl.drawElements(gl.TRIANGLES, quadSphereIndices.length, gl.UNSIGNED_SHORT, 0);
+    gl.drawElements(gl.TRIANGLES, earthGeo.indexCount, gl.UNSIGNED_SHORT, 0);
 
     vao.unbind();
     rafId = window.requestAnimationFrame(render);
