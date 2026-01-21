@@ -44,7 +44,6 @@ export class GLBuffer {
   destroy() {
     if (this.buffer) {
       this.gl.deleteBuffer(this.buffer);
-      // @ts-expect-error clear handle
       this.buffer = null;
     }
   }

@@ -69,7 +69,6 @@ export class VertexArray {
   destroy() {
     if (this.vao) {
       this.gl.deleteVertexArray(this.vao);
-      // @ts-expect-error clear handle
       this.vao = null;
     }
   }

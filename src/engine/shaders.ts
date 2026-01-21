@@ -63,7 +63,6 @@ export class Program {
   destroy() {
     if (this.program) {
       this.gl.deleteProgram(this.program);
-      // @ts-expect-error clear handle
       this.program = null;
     }
   }
