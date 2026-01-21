@@ -83,8 +83,8 @@ async def get_satellites():
         # Direction of travel (normalized velocity vector)
         direction = {
             "x": velocity_vector[0] / speed if speed > 0 else 0,
-            "y": velocity_vector[1] / speed if speed > 0 else 0,
-            "z": velocity_vector[2] / speed if speed > 0 else 0
+            "y": velocity_vector[2] / speed if speed > 0 else 0,
+            "z": velocity_vector[1] / speed if speed > 0 else 0
         }
 
         # NORAD ID
@@ -102,13 +102,13 @@ async def get_satellites():
             "direction": direction,
             "position": {
                 "x": position_vector[0],
-                "y": position_vector[1],
-                "z": position_vector[2]
+                "y": position_vector[2],
+                "z": position_vector[1]
             },
             "velocity": {
                 "vx": velocity_vector[0],
-                "vy": velocity_vector[1],
-                "vz": velocity_vector[2]
+                "vy": velocity_vector[2],
+                "vz": velocity_vector[1]
             }
         })
 
