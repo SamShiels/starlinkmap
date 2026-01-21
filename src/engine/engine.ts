@@ -18,9 +18,9 @@ type Engine = {
 export function createEngine(canvas: HTMLCanvasElement): Engine {
   const gl = getGLContext(canvas);
   gl.clearColor(0.05, 0.07, 0.12, 1.0);
+  gl.enable(gl.DEPTH_TEST);
 
   const controls = new CameraControls(canvas);
-  gl.enable(gl.DEPTH_TEST);
 
   const program = new Program(gl, VERTEX_SHADER, FRAGMENT_SHADER);
 
@@ -29,7 +29,7 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
   img.onload = () => {
     texture.uploadFromImage(img);
   };
-  img.src = '/2k_earth_daymap.jpg';
+  img.src = '/8k_earth_daymap.jpg';
 
   const earthGeo = QuadSphereGenerator.create(0.7, 64);
 
