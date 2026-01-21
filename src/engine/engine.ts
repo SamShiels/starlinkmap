@@ -5,6 +5,29 @@ import { Satellite } from './satellite';
 import { getGLContext } from './helpers/context';
 import { makeLookAtMatrix, makePerspectiveMatrix } from './helpers/matrices';
 
+type SatelliteData = {
+  id: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+  altitude_km: number;
+  speed_kms: number;
+  orbital_radius_km: number;
+  angular_velocity_rad_per_s: number;
+  direction: { x: number; y: number; z: number };
+  position: { x: number; y: number; z: number };
+  velocity: { vx: number; vy: number; vz: number };
+};
+
+async function fetchSatellites(): Promise<SatelliteData[]> {
+  const response = await fetch('http://localhost:8000/satellites');
+  if (!response.ok) {
+    throw new Error('Failed to fetch satellites');
+  }
+  const data = await response.json();
+  return data.satellites;
+}
+
 type Engine = {
   gl: WebGL2RenderingContext;
   start: () => void;
@@ -12,18 +35,30 @@ type Engine = {
   destroy: () => void;
 };
 
-export function createEngine(canvas: HTMLCanvasElement): Engine {
+export async function createEngine(canvas: HTMLCanvasElement): Promise<Engine> {
   const gl = getGLContext(canvas);
   gl.clearColor(0.05, 0.07, 0.12, 1.0);
   gl.enable(gl.DEPTH_TEST);
 
   const controls = new CameraControls(canvas);
 
-  // Create some test satellites (will be replaced with real data)
-  const satellites: Satellite[] = [
-    new Satellite(1.1, 0.5, 0), // radius, angular vel, initial angle
-    new Satellite(1.2, -0.3, Math.PI / 2), // opposite direction
-  ];
+  // Fetch real satellite data
+  const satelliteData = await fetchSatellites();
+  const satellites: Satellite[] = satelliteData.map(data => {
+    // Scale positions and velocities for visualization (km to some unit)
+    const scale = 0.00012; // e.g., 1 unit = 1 km
+    const position = {
+      x: data.position.x * scale,
+      y: data.position.y * scale,
+      z: data.position.z * scale,
+    };
+    const velocity = {
+      vx: data.velocity.vx * scale,
+      vy: data.velocity.vy * scale,
+      vz: data.velocity.vz * scale,
+    };
+    return new Satellite(position, velocity);
+  });
 
   const sceneRenderer = new SceneRenderer(gl, satellites);
 

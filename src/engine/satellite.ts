@@ -2,38 +2,18 @@ export class Satellite {
   public position: { x: number; y: number; z: number };
   public velocity: { vx: number; vy: number; vz: number };
 
-  private angle = 0;
-  private orbitalRadius: number;
-  private angularVelocity: number;
-
   constructor(
-    orbitalRadius: number,
-    angularVelocity: number,
-    initialAngle = 0
+    position: { x: number; y: number; z: number },
+    velocity: { vx: number; vy: number; vz: number }
   ) {
-    this.orbitalRadius = orbitalRadius;
-    this.angularVelocity = angularVelocity;
-    this.angle = initialAngle;
-
-    this.updatePositionAndVelocity();
-  }
-
-  private updatePositionAndVelocity() {
-    this.position = {
-      x: this.orbitalRadius * Math.cos(this.angle),
-      y: 0,
-      z: this.orbitalRadius * Math.sin(this.angle),
-    };
-
-    this.velocity = {
-      vx: -this.orbitalRadius * this.angularVelocity * Math.sin(this.angle),
-      vy: 0,
-      vz: this.orbitalRadius * this.angularVelocity * Math.cos(this.angle),
-    };
+    this.position = { ...position };
+    this.velocity = { ...velocity };
   }
 
   update(dtSeconds: number) {
-    this.angle += this.angularVelocity * dtSeconds;
-    this.updatePositionAndVelocity();
+    // Simple Euler integration: position += velocity * dt
+    this.position.x += this.velocity.vx * dtSeconds;
+    this.position.y += this.velocity.vy * dtSeconds;
+    this.position.z += this.velocity.vz * dtSeconds;
   }
 }

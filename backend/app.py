@@ -1,10 +1,19 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from spacetrack import SpaceTrackClient
 from skyfield.api import EarthSatellite, load, wgs84
 import numpy as np
 import os
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # Allow frontend origin
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Load credentials from environment variables
 ST_USERNAME = os.getenv("ST_USERNAME")
@@ -64,6 +73,20 @@ async def get_satellites():
         velocity_vector = geocentric.velocity.km_per_s
         speed = np.linalg.norm(velocity_vector)
 
+        # Compute orbital radius (geocentric distance)
+        position_vector = geocentric.position.km
+        orbital_radius_km = np.linalg.norm(position_vector)
+
+        # Angular velocity (for circular orbit approximation: ω = v / r)
+        angular_velocity_rad_per_s = speed / orbital_radius_km
+
+        # Direction of travel (normalized velocity vector)
+        direction = {
+            "x": velocity_vector[0] / speed if speed > 0 else 0,
+            "y": velocity_vector[1] / speed if speed > 0 else 0,
+            "z": velocity_vector[2] / speed if speed > 0 else 0
+        }
+
         # NORAD ID
         norad_id = sat.model.satnum
 
@@ -74,6 +97,14 @@ async def get_satellites():
             "longitude": lon,
             "altitude_km": alt,
             "speed_kms": speed,
+            "orbital_radius_km": orbital_radius_km,
+            "angular_velocity_rad_per_s": angular_velocity_rad_per_s,
+            "direction": direction,
+            "position": {
+                "x": position_vector[0],
+                "y": position_vector[1],
+                "z": position_vector[2]
+            },
             "velocity": {
                 "vx": velocity_vector[0],
                 "vy": velocity_vector[1],
