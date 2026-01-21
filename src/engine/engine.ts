@@ -58,19 +58,14 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
   const indexBuffer = new GLBuffer(gl, indexData, { target: 'index' });
 
   const stride = 5 * Float32Array.BYTES_PER_ELEMENT;
-  const positionOffset = 0;
-  const colorOffset = 2 * Float32Array.BYTES_PER_ELEMENT;
 
   const positionLoc = gl.getAttribLocation(program.handle, 'aPosition');
   const colorLoc = gl.getAttribLocation(program.handle, 'aColor');
 
-  const vao = new VertexArray(gl, () => {
+  const vao = new VertexArray(gl, (builder) => {
     gl.bindBuffer(vertexBuffer.targetEnum, vertexBuffer.handle);
-    gl.enableVertexAttribArray(positionLoc);
-    gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, stride, positionOffset);
-
-    gl.enableVertexAttribArray(colorLoc);
-    gl.vertexAttribPointer(colorLoc, 3, gl.FLOAT, false, stride, colorOffset);
+    builder.addPointer({ location: positionLoc, size: 2, stride });
+    builder.addPointer({ location: colorLoc, size: 3, stride });
 
     gl.bindBuffer(indexBuffer.targetEnum, indexBuffer.handle);
   });
