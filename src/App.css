@@ -18,6 +18,38 @@
   background: radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.04), transparent 50%);
 }
 
+.hover-label {
+  position: absolute;
+  top: 1.25rem;
+  left: 1.25rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(12, 14, 22, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  color: #e8edf5;
+  pointer-events: none;
+}
+
+.hover-label__tag {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  margin-bottom: 0.3rem;
+  border-radius: 999px;
+  background: rgba(119, 157, 255, 0.16);
+  border: 1px solid rgba(119, 157, 255, 0.3);
+  color: #c8d6ff;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.hover-label__name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
 .hud {
   position: relative;
   z-index: 1;

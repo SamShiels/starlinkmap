@@ -35,7 +35,10 @@ type Engine = {
   destroy: () => void;
 };
 
-export async function createEngine(canvas: HTMLCanvasElement): Promise<Engine> {
+export async function createEngine(
+  canvas: HTMLCanvasElement,
+  options: { onHoverChange?: (name: string | null) => void } = {},
+): Promise<Engine> {
   const gl = getGLContext(canvas);
   gl.clearColor(0.01, 0.01, 0.1, 1.0);
   gl.enable(gl.DEPTH_TEST);
@@ -57,16 +60,32 @@ export async function createEngine(canvas: HTMLCanvasElement): Promise<Engine> {
       y: data.velocity.vy * scale,
       z: data.velocity.vz * scale,
     };
-    return new Satellite(position, velocity, data.angular_velocity_rad_per_s);
+    return new Satellite(data.id, data.name, position, velocity, data.angular_velocity_rad_per_s);
   });
 
-  const sceneRenderer = new SceneRenderer(gl, satellites);
+  const sceneRenderer = new SceneRenderer(gl, satellites, options.onHoverChange);
 
   let rafId: number | null = null;
   let destroyed = false;
+  const canvasEl = gl.canvas as HTMLCanvasElement;
 
   const viewMatrix = new Float32Array(16);
   const projectionMatrix = new Float32Array(16);
+
+  const handleMouseMove = (event: MouseEvent) => {
+    const rect = canvasEl.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const x = (event.clientX - rect.left) * dpr;
+    const y = (event.clientY - rect.top) * dpr;
+    sceneRenderer.setPointer({ x, y });
+  };
+
+  const handleMouseLeave = () => {
+    sceneRenderer.setPointer(null);
+  };
+
+  canvasEl.addEventListener('mousemove', handleMouseMove);
+  canvasEl.addEventListener('mouseleave', handleMouseLeave);
 
   // Prevent page scrolling
   document.addEventListener('wheel', (event) => {
@@ -112,10 +131,11 @@ export async function createEngine(canvas: HTMLCanvasElement): Promise<Engine> {
       return;
     }
     stop();
+    canvasEl.removeEventListener('mousemove', handleMouseMove);
+    canvasEl.removeEventListener('mouseleave', handleMouseLeave);
     sceneRenderer.destroy();
     destroyed = true;
   }
 
   return { gl, start, stop, destroy };
 }
-

@@ -1,4 +1,6 @@
 export class Satellite {
+  public id: number;
+  public name: string;
   public position: { x: number; y: number; z: number };
   public velocity: { x: number; y: number; z: number };
   private orbitNormal: { x: number; y: number; z: number };
@@ -6,10 +8,14 @@ export class Satellite {
   private angularSpeed: number;
 
   constructor(
+    id: number,
+    name: string,
     position: { x: number; y: number; z: number },
     velocity: { x: number; y: number; z: number },
     angularVelocityRadPerS: number
   ) {
+    this.id = id;
+    this.name = name;
     this.position = { ...position };
     this.velocity = { ...velocity };
 
