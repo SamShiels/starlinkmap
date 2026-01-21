@@ -17,7 +17,7 @@ export class SceneRenderer {
   }
 
   render(viewMatrix: Float32Array, projectionMatrix: Float32Array, currentTime: number) {
-    const dt = (currentTime - this.lastTime) / 1000; // seconds
+    const dt = (currentTime - this.lastTime) / 100; // seconds
     this.lastTime = currentTime;
 
     // Update satellites

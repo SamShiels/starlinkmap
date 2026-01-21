@@ -37,7 +37,7 @@ type Engine = {
 
 export async function createEngine(canvas: HTMLCanvasElement): Promise<Engine> {
   const gl = getGLContext(canvas);
-  gl.clearColor(0.05, 0.07, 0.12, 1.0);
+  gl.clearColor(0.01, 0.01, 0.1, 1.0);
   gl.enable(gl.DEPTH_TEST);
 
   const controls = new CameraControls(canvas);
@@ -46,7 +46,7 @@ export async function createEngine(canvas: HTMLCanvasElement): Promise<Engine> {
   const satelliteData = await fetchSatellites();
   const satellites: Satellite[] = satelliteData.map(data => {
     // Scale positions and velocities for visualization (km to some unit)
-    const scale = 0.00012; // e.g., 1 unit = 1 km
+    const scale = 0.0002; // e.g., 1 unit = 1 km
     const position = {
       x: data.position.x * scale,
       y: data.position.y * scale,

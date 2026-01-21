@@ -7,30 +7,40 @@ import { VertexArray } from './helpers/vaos';
 const VERTEX_SHADER = `#version 300 es
 in vec3 aPosition;
 in vec2 aUv;
+in vec3 aNormal;
 uniform mat4 uView;
 uniform mat4 uProjection;
-out vec3 vColor;
 out vec2 vUv;
+out vec3 vNormal;
 
 void main() {
   vec3 world = aPosition;
-  vec3 normal = normalize(world);
   gl_Position = uProjection * uView * vec4(world, 1.0);
-  vColor = normal * 0.5 + 0.5;
   vUv = aUv;
+  vNormal = aNormal;
 }
 `;
 
 const FRAGMENT_SHADER = `#version 300 es
 precision highp float;
-in vec3 vColor;
 in vec2 vUv;
-uniform sampler2D uTexture;
+in vec3 vNormal;
+uniform sampler2D uDayTexture;
+uniform sampler2D uNightTexture;
+uniform vec3 uSunDirection;
 out vec4 outColor;
 
 void main() {
-  vec3 texColor = texture(uTexture, vUv).rgb;
-  outColor = vec4(texColor, 1.0);
+  vec3 normal = normalize(vNormal);
+  vec3 sunDir = normalize(uSunDirection);
+
+  float sunAmount = clamp(dot(normal, sunDir), 0.0, 1.0);
+
+  vec3 dayColor = texture(uDayTexture, vUv).rgb;
+  vec3 nightColor = texture(uNightTexture, vUv).rgb;
+
+  vec3 color = mix(nightColor, dayColor, sunAmount);
+  outColor = vec4(color, 1.0);
 }
 `;
 
@@ -59,7 +69,7 @@ export class EarthRenderer {
     dayImg.onload = () => {
       this.dayTexture.uploadFromImage(dayImg);
     };
-    dayImg.src = '/2k_earth_daymap.jpg';
+    dayImg.src = '/8k_earth_daymap.jpg';
 
     // Load night texture
     this.nightTexture = new GLTexture2D(gl, { wrapS: gl.REPEAT, wrapT: gl.CLAMP_TO_EDGE });
@@ -67,7 +77,7 @@ export class EarthRenderer {
     nightImg.onload = () => {
       this.nightTexture.uploadFromImage(nightImg);
     };
-    nightImg.src = '/8k_earth_night.jpg';
+    nightImg.src = '/8k_earth_nightmap.jpg';
 
     // Create geometry
     this.geo = QuadSphereGenerator.create(0.7, 64);
