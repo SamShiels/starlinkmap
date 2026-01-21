@@ -53,11 +53,11 @@ export async function createEngine(canvas: HTMLCanvasElement): Promise<Engine> {
       z: data.position.z * scale,
     };
     const velocity = {
-      vx: data.velocity.vx * scale,
-      vy: data.velocity.vy * scale,
-      vz: data.velocity.vz * scale,
+      x: data.velocity.vx * scale,
+      y: data.velocity.vy * scale,
+      z: data.velocity.vz * scale,
     };
-    return new Satellite(position, velocity);
+    return new Satellite(position, velocity, data.angular_velocity_rad_per_s);
   });
 
   const sceneRenderer = new SceneRenderer(gl, satellites);
@@ -118,5 +118,4 @@ export async function createEngine(canvas: HTMLCanvasElement): Promise<Engine> {
 
   return { gl, start, stop, destroy };
 }
-
 
