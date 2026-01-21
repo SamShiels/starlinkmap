@@ -1,37 +1,43 @@
 import { GLBuffer } from './buffers';
 import { setSizedCanvas } from './canvas';
 import { getGLContext } from './context';
+import { quadSphereIndices, quadSphereInterleaved } from './geometry/quadSphere';
 import { Program } from './shaders';
 import { VertexArray } from './vaos';
 
 const VERTEX_SHADER = `#version 300 es
-in vec2 aPosition;
-in vec3 aColor;
+in vec3 aPosition;
+in vec2 aUv;
 uniform float uTime;
 uniform mat4 uView;
 uniform mat4 uProjection;
 out vec3 vColor;
+out vec2 vUv;
 
 void main() {
-  float angle = uTime * 0.6;
-  mat2 rot = mat2(
-    cos(angle), -sin(angle),
-    sin(angle),  cos(angle)
+  float angle = uTime * 0.5;
+  mat3 rotY = mat3(
+    cos(angle), 0.0, sin(angle),
+    0.0,        1.0, 0.0,
+   -sin(angle), 0.0, cos(angle)
   );
-  vec2 pos = rot * aPosition;
-  vec4 worldPos = vec4(pos, 0.0, 1.0);
-  gl_Position = uProjection * uView * worldPos;
-  vColor = aColor;
+  vec3 world = rotY * aPosition;
+  vec3 normal = normalize(world);
+  gl_Position = uProjection * uView * vec4(world, 1.0);
+  vColor = normal * 0.5 + 0.5;
+  vUv = aUv;
 }
 `;
 
 const FRAGMENT_SHADER = `#version 300 es
 precision highp float;
 in vec3 vColor;
+in vec2 vUv;
 out vec4 outColor;
 
 void main() {
-  outColor = vec4(vColor, 1.0);
+  vec3 uvTint = vec3(vUv, 0.6);
+  outColor = vec4(mix(vColor, uvTint, 0.35), 1.0);
 }
 `;
 
@@ -48,27 +54,18 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
 
   const program = new Program(gl, VERTEX_SHADER, FRAGMENT_SHADER);
 
-  const vertexData = new Float32Array([
-    // x,     y,     r,    g,    b
-     0.0,   0.7,   1.0,  0.45, 0.3,
-    -0.8,  -0.6,   0.3,  0.85, 1.0,
-     0.8,  -0.6,   0.4,  1.0,  0.6,
-  ]);
-
-  const indexData = new Uint16Array([0, 1, 2]);
-
-  const vertexBuffer = new GLBuffer(gl, vertexData, { target: 'vertex' });
-  const indexBuffer = new GLBuffer(gl, indexData, { target: 'index' });
+  const vertexBuffer = new GLBuffer(gl, quadSphereInterleaved, { target: 'vertex' });
+  const indexBuffer = new GLBuffer(gl, quadSphereIndices, { target: 'index' });
 
   const stride = 5 * Float32Array.BYTES_PER_ELEMENT;
 
   const positionLoc = gl.getAttribLocation(program.handle, 'aPosition');
-  const colorLoc = gl.getAttribLocation(program.handle, 'aColor');
+  const uvLoc = gl.getAttribLocation(program.handle, 'aUv');
 
   const vao = new VertexArray(gl, (builder) => {
     gl.bindBuffer(vertexBuffer.targetEnum, vertexBuffer.handle);
-    builder.addPointer({ location: positionLoc, size: 2, stride });
-    builder.addPointer({ location: colorLoc, size: 3, stride });
+    builder.addPointer({ location: positionLoc, size: 3, stride });
+    builder.addPointer({ location: uvLoc, size: 2, stride });
 
     gl.bindBuffer(indexBuffer.targetEnum, indexBuffer.handle);
   });
@@ -77,6 +74,7 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
   if (!timeLocation) {
     throw new Error('Failed to find uTime uniform');
   }
+
   const viewLocation = program.getUniformLocation('uView');
   const projectionLocation = program.getUniformLocation('uProjection');
   if (!viewLocation || !projectionLocation) {
@@ -103,7 +101,7 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
     gl.uniform1f(timeLocation, time);
     gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
     gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
-    gl.drawElements(gl.TRIANGLES, indexData.length, gl.UNSIGNED_SHORT, 0);
+    gl.drawElements(gl.TRIANGLES, quadSphereIndices.length, gl.UNSIGNED_SHORT, 0);
 
     vao.unbind();
     rafId = window.requestAnimationFrame(render);
