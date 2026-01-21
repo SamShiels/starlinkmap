@@ -9,17 +9,6 @@
   color: #e8edf5;
 }
 
-.scene::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 20% 25%, rgba(66, 140, 255, 0.18), transparent 35%),
-    radial-gradient(circle at 80% 75%, rgba(239, 101, 190, 0.2), transparent 32%),
-    linear-gradient(135deg, rgba(10, 13, 24, 0.9), rgba(8, 9, 15, 0.85));
-  z-index: 0;
-  pointer-events: none;
-}
-
 .webgl-canvas {
   position: absolute;
   inset: 0;
