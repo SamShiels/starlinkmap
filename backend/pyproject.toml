@@ -1,0 +1,13 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Backend for fetching Starlink satellite data"
+authors = [{name = "Your Name"}]
+requires-python = ">=3.9"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "spacetrack",
+    "skyfield",
+    "numpy"
+]

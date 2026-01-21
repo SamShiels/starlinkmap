@@ -1,7 +1,7 @@
 /**
  * Result interface containing the WebGL2 compatible buffers.
  */
-interface SphereGeometry {
+export interface SphereGeometry {
   /** Interleaved Data: [x, y, z, u, v, ...] */
   vertices: Float32Array; 
   /** Triangle draw indices */
@@ -78,15 +78,19 @@ export class QuadSphereGenerator {
           const z = nz * radius;
 
           // Calculate UVs (Equirectangular / Spherical Mapping)
-          // u = atan2(x, z) / 2pi + 0.5
-          // v = asin(y) / pi + 0.5
-          const u = 0.5 + (Math.atan2(nz, nx) / (2 * Math.PI));
+          let u = 0.5 + (Math.atan2(nz, nx) / (2 * Math.PI));
           const v = 0.5 - (Math.asin(ny) / Math.PI);
 
-          // FIX: Seam Correction
-          // If we are on the texture seam, we might get 0 instead of 1 or vice versa.
-          // Since we generate faces independently, we can just clamp or nudge if needed.
-          // However, standard math usually works fine provided faces aren't shared.
+          // --- FIX START ---
+          // Check if we are on the "Left" face (Index 1: -X direction)
+          // This is the face that wraps around the date line.
+          if (face.origin[0] === -1 && face.origin[1] === 1 && face.origin[2] === -1) {
+            // If u is low (e.g. 0.0 to 0.25), it means we've wrapped around to the start.
+            // We add 1.0 to make it continuous with the previous vertices (0.9 -> 1.1).
+            if (u < 0.5) {
+              u += 1.0;
+            }
+          }
           
           // Store Interleaved Data
           vertices[vIndex++] = x;

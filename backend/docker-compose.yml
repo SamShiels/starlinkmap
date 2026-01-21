@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  starlink-backend:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - ST_USERNAME=sam.shiels@gmail.com
+      - ST_PASSWORD=Dontstealit!12555
+    restart: unless-stopped
