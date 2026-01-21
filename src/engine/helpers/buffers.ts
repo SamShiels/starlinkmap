@@ -41,6 +41,12 @@ export class GLBuffer {
     this.gl.bindBuffer(this.target, null);
   }
 
+  updateData(data: BufferSource) {
+    this.bind();
+    this.gl.bufferData(this.target, data, this.gl.DYNAMIC_DRAW);
+    this.unbind();
+  }
+
   destroy() {
     if (this.buffer) {
       this.gl.deleteBuffer(this.buffer);

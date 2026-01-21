@@ -1,6 +1,7 @@
 import { setSizedCanvas } from './canvas';
 import { CameraControls } from './cameraControls';
-import { EarthRenderer } from './earthRenderer';
+import { SceneRenderer } from './sceneRenderer';
+import { Satellite } from './satellite';
 import { getGLContext } from './helpers/context';
 import { makeLookAtMatrix, makePerspectiveMatrix } from './helpers/matrices';
 
@@ -17,7 +18,14 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
   gl.enable(gl.DEPTH_TEST);
 
   const controls = new CameraControls(canvas);
-  const earthRenderer = new EarthRenderer(gl);
+
+  // Create some test satellites (will be replaced with real data)
+  const satellites: Satellite[] = [
+    new Satellite(1.1, 0.5, 0), // radius, angular vel, initial angle
+    new Satellite(1.2, -0.3, Math.PI / 2), // opposite direction
+  ];
+
+  const sceneRenderer = new SceneRenderer(gl, satellites);
 
   let rafId: number | null = null;
   let destroyed = false;
@@ -30,7 +38,7 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
     event.preventDefault();
   }, { passive: false });
 
-  function render() {
+  function render(timeMs: number) {
     setSizedCanvas(gl);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -47,7 +55,7 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
     const target = { x: 0, y: 0, z: 0 };
     makeLookAtMatrix(viewMatrix, eye, target);
 
-    earthRenderer.render(viewMatrix, projectionMatrix);
+    sceneRenderer.render(viewMatrix, projectionMatrix, timeMs);
     rafId = window.requestAnimationFrame(render);
   }
 
@@ -69,7 +77,7 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
       return;
     }
     stop();
-    earthRenderer.destroy();
+    sceneRenderer.destroy();
     destroyed = true;
   }
 
