@@ -62,10 +62,12 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
   // Camera controls
   let theta = 0; // azimuthal angle
   let phi = 0; // polar angle
+  let radius = 2;
 
-  let thetaSmooth = 0; // azimuthal angle
-  let phiSmooth = 0; // polar angle
-  const radius = 2;
+  // Smoothing deltas
+  let thetaSmooth = 0;
+  let phiSmooth = 0;
+  let radiusSmooth = 0;
 
   // Mouse drag state
   let isDragging = false;
@@ -101,8 +103,18 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
     isDragging = false;
   });
 
-  function render(timeMs: number) {
-    const time = timeMs * 0.001;
+  canvas.addEventListener('wheel', (event) => {
+    const zoomSensitivity = 0.001;
+    radiusSmooth += event.deltaY * zoomSensitivity;
+    event.preventDefault();
+  });
+
+  // Prevent page scrolling
+  document.addEventListener('wheel', (event) => {
+    event.preventDefault();
+  }, { passive: false });
+
+  function render() {
     setSizedCanvas(gl);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -111,12 +123,15 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
 
     theta += thetaSmooth;
     phi += phiSmooth;
+    radius += radiusSmooth;
 
-    thetaSmooth = thetaSmooth * 0.8;
-    phiSmooth = phiSmooth * 0.8;
+    thetaSmooth *= 0.8;
+    phiSmooth *= 0.8;
+    radiusSmooth *= 0.8;
 
-    // Clamp phi to avoid flipping
+    // Clamp phi and radius to avoid flipping/extremes
     phi = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, phi));
+    radius = Math.max(1.0, Math.min(10, radius));
 
     const eye = {
       x: radius * Math.cos(phi) * Math.cos(theta),
