@@ -12,6 +12,7 @@ export class SceneRenderer {
   private hoveredId: number | null = null;
   private viewProj = new Float32Array(16);
   private onHoverChange?: (name: string | null) => void;
+  private readonly earthRadius = 0.7;
 
   constructor(gl: WebGL2RenderingContext, satellites: Satellite[], onHoverChange?: (name: string | null) => void) {
     this.gl = gl;
@@ -25,7 +26,12 @@ export class SceneRenderer {
     this.pointer = position;
   }
 
-  render(viewMatrix: Float32Array, projectionMatrix: Float32Array, currentTime: number) {
+  render(
+    viewMatrix: Float32Array,
+    projectionMatrix: Float32Array,
+    currentTime: number,
+    eye: { x: number; y: number; z: number },
+  ) {
     const dt = (currentTime - this.lastTime) / 1000; // seconds
     this.lastTime = currentTime;
 
@@ -40,7 +46,7 @@ export class SceneRenderer {
     // Render satellites
     this.satelliteRenderer.render(viewMatrix, projectionMatrix, this.satellites);
 
-    this.updateHover(viewMatrix, projectionMatrix);
+    this.updateHover(viewMatrix, projectionMatrix, eye);
   }
 
   destroy() {
@@ -48,7 +54,11 @@ export class SceneRenderer {
     this.satelliteRenderer.destroy();
   }
 
-  private updateHover(viewMatrix: Float32Array, projectionMatrix: Float32Array) {
+  private updateHover(
+    viewMatrix: Float32Array,
+    projectionMatrix: Float32Array,
+    eye: { x: number; y: number; z: number },
+  ) {
     if (!this.pointer) {
       if (this.hoveredId !== null) {
         this.hoveredId = null;
@@ -71,6 +81,8 @@ export class SceneRenderer {
     let closestDistSq = Number.POSITIVE_INFINITY;
 
     for (const sat of this.satellites) {
+      if (this.isOccludedByEarth(sat.position, eye)) continue;
+
       const clip = this.transformPoint(this.viewProj, sat.position);
       if (clip.w <= 0.0) continue; // Behind camera
 
@@ -140,5 +152,26 @@ export class SceneRenderer {
     out[13] = b30 * a01 + b31 * a11 + b32 * a21 + b33 * a31;
     out[14] = b30 * a02 + b31 * a12 + b32 * a22 + b33 * a32;
     out[15] = b30 * a03 + b31 * a13 + b32 * a23 + b33 * a33;
+  }
+
+  private isOccludedByEarth(
+    satPos: { x: number; y: number; z: number },
+    eye: { x: number; y: number; z: number },
+  ): boolean {
+    // Segment test from eye to satellite against sphere at origin with radius earthRadius
+    const vx = satPos.x - eye.x;
+    const vy = satPos.y - eye.y;
+    const vz = satPos.z - eye.z;
+
+    const segLenSq = vx * vx + vy * vy + vz * vz;
+    if (segLenSq === 0) return false;
+
+    const t = Math.max(0, Math.min(1, -(eye.x * vx + eye.y * vy + eye.z * vz) / segLenSq));
+    const closestX = eye.x + vx * t;
+    const closestY = eye.y + vy * t;
+    const closestZ = eye.z + vz * t;
+
+    const distSq = closestX * closestX + closestY * closestY + closestZ * closestZ;
+    return distSq < this.earthRadius * this.earthRadius;
   }
 }

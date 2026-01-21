@@ -49,7 +49,7 @@ export async function createEngine(
   const satelliteData = await fetchSatellites();
   const satellites: Satellite[] = satelliteData.map(data => {
     // Scale positions and velocities for visualization (km to some unit)
-    const scale = 0.00012; // e.g., 1 unit = 1 km
+    const scale = 0.000105; // e.g., 1 unit = 1 km
     const position = {
       x: data.position.x * scale,
       y: data.position.y * scale,
@@ -109,7 +109,7 @@ export async function createEngine(
     const target = { x: 0, y: 0, z: 0 };
     makeLookAtMatrix(viewMatrix, eye, target);
 
-    sceneRenderer.render(viewMatrix, projectionMatrix, timeMs);
+    sceneRenderer.render(viewMatrix, projectionMatrix, timeMs, eye);
     rafId = window.requestAnimationFrame(render);
   }
 
