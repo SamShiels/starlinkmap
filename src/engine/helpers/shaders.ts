@@ -1,5 +1,49 @@
 // Shader and program helpers
 
+export const VERTEX_SHADER = `#version 300 es
+in vec3 aPosition;
+in vec2 aUv;
+in vec3 aNormal;
+
+uniform mat4 uView;
+uniform mat4 uProjection;
+
+out vec2 vUv;
+out vec3 vNormal;
+
+void main() {
+  gl_Position = uProjection * uView * vec4(aPosition, 1.0);
+  vUv = aUv;
+  vNormal = aNormal;
+}
+`;
+
+export const FRAGMENT_SHADER = `#version 300 es
+precision highp float;
+
+in vec2 vUv;
+in vec3 vNormal;
+
+uniform sampler2D uDayTexture;
+uniform sampler2D uNightTexture;
+uniform vec3 uSunDirection;
+
+out vec4 outColor;
+
+void main() {
+  vec3 normal = normalize(vNormal);
+  float dotSun = dot(normal, uSunDirection);
+
+  // Smooth blend: day when dot > 0, night when dot < 0, mix in between
+  float blend = smoothstep(-0.1, 0.1, dotSun);
+
+  vec4 dayColor = texture(uDayTexture, vUv);
+  vec4 nightColor = texture(uNightTexture, vUv);
+
+  outColor = mix(nightColor, dayColor, blend);
+}
+`;
+
 function compileShader(gl: WebGL2RenderingContext, type: number, source: string): WebGLShader {
   const shader = gl.createShader(type);
   if (!shader) {
@@ -67,33 +111,3 @@ export class Program {
     }
   }
 }
-
-export const VERTEX_SHADER = `#version 300 es
-in vec3 aPosition;
-in vec2 aUv;
-uniform mat4 uView;
-uniform mat4 uProjection;
-out vec3 vColor;
-out vec2 vUv;
-
-void main() {
-  vec3 world = aPosition;
-  vec3 normal = normalize(world);
-  gl_Position = uProjection * uView * vec4(world, 1.0);
-  vColor = normal * 0.5 + 0.5;
-  vUv = aUv;
-}
-`;
-
-export const FRAGMENT_SHADER = `#version 300 es
-precision highp float;
-in vec3 vColor;
-in vec2 vUv;
-uniform sampler2D uTexture;
-out vec4 outColor;
-
-void main() {
-  vec3 texColor = texture(uTexture, vUv).rgb;
-  outColor = vec4(texColor, 1.0);
-}
-`;

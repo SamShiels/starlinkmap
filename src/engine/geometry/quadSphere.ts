@@ -2,7 +2,7 @@
  * Result interface containing the WebGL2 compatible buffers.
  */
 export interface SphereGeometry {
-  /** Interleaved Data: [x, y, z, u, v, ...] */
+  /** Interleaved Data: [x, y, z, u, v, nx, ny, nz, ...] */
   vertices: Float32Array; 
   /** Triangle draw indices */
   indices: Uint32Array; 
@@ -21,10 +21,10 @@ export class QuadSphereGenerator {
    * @returns SphereGeometry containing interleaved buffer and indices.
    */
   public static create(radius: number, subdivisions: number): SphereGeometry {
-    // 6 faces, (subdivisions + 1)^2 vertices per face, 5 floats per vertex (xyzuv)
+    // 6 faces, (subdivisions + 1)^2 vertices per face, 8 floats per vertex (xyzuv nxnynz)
     const vertexCountPerFace = (subdivisions + 1) * (subdivisions + 1);
     const totalVertices = vertexCountPerFace * 6;
-    const vertexStride = 5; // x, y, z, u, v
+    const vertexStride = 8; // x, y, z, u, v, nx, ny, nz
     
     // 6 faces, subdivisions^2 quads per face, 2 triangles per quad, 3 indices per tri
     const indexCountPerFace = subdivisions * subdivisions * 6;
@@ -98,6 +98,9 @@ export class QuadSphereGenerator {
           vertices[vIndex++] = z;
           vertices[vIndex++] = u;
           vertices[vIndex++] = v;
+          vertices[vIndex++] = nx;
+          vertices[vIndex++] = ny;
+          vertices[vIndex++] = nz;
         }
       }
 
