@@ -1,8 +1,8 @@
-import { createBuffer, destroyBuffer } from './buffers';
+import { GLBuffer } from './buffers';
 import { setSizedCanvas } from './canvas';
 import { getGLContext } from './context';
-import { createProgram, destroyProgram } from './shaders';
-import { createVertexArray, destroyVertexArray } from './vaos';
+import { Program } from './shaders';
+import { VertexArray } from './vaos';
 
 const VERTEX_SHADER = `#version 300 es
 in vec2 aPosition;
@@ -43,7 +43,7 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
   const gl = getGLContext(canvas);
   gl.clearColor(0.05, 0.07, 0.12, 1.0);
 
-  const program = createProgram(gl, VERTEX_SHADER, FRAGMENT_SHADER);
+  const program = new Program(gl, VERTEX_SHADER, FRAGMENT_SHADER);
 
   const vertexData = new Float32Array([
     // x,     y,     r,    g,    b
@@ -54,28 +54,28 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
 
   const indexData = new Uint16Array([0, 1, 2]);
 
-  const vertexBuffer = createBuffer(gl, vertexData, { target: 'vertex' });
-  const indexBuffer = createBuffer(gl, indexData, { target: 'index' });
+  const vertexBuffer = new GLBuffer(gl, vertexData, { target: 'vertex' });
+  const indexBuffer = new GLBuffer(gl, indexData, { target: 'index' });
 
   const stride = 5 * Float32Array.BYTES_PER_ELEMENT;
   const positionOffset = 0;
   const colorOffset = 2 * Float32Array.BYTES_PER_ELEMENT;
 
-  const positionLoc = gl.getAttribLocation(program, 'aPosition');
-  const colorLoc = gl.getAttribLocation(program, 'aColor');
+  const positionLoc = gl.getAttribLocation(program.handle, 'aPosition');
+  const colorLoc = gl.getAttribLocation(program.handle, 'aColor');
 
-  const vao = createVertexArray(gl, () => {
-    gl.bindBuffer(vertexBuffer.target, vertexBuffer.buffer);
+  const vao = new VertexArray(gl, () => {
+    gl.bindBuffer(vertexBuffer.targetEnum, vertexBuffer.handle);
     gl.enableVertexAttribArray(positionLoc);
     gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, stride, positionOffset);
 
     gl.enableVertexAttribArray(colorLoc);
     gl.vertexAttribPointer(colorLoc, 3, gl.FLOAT, false, stride, colorOffset);
 
-    gl.bindBuffer(indexBuffer.target, indexBuffer.buffer);
+    gl.bindBuffer(indexBuffer.targetEnum, indexBuffer.handle);
   });
 
-  const timeLocation = gl.getUniformLocation(program, 'uTime');
+  const timeLocation = program.getUniformLocation('uTime');
   if (!timeLocation) {
     throw new Error('Failed to find uTime uniform');
   }
@@ -88,13 +88,13 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
     setSizedCanvas(gl);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
-    gl.useProgram(program);
-    gl.bindVertexArray(vao);
+    program.use();
+    vao.bind();
 
     gl.uniform1f(timeLocation, time);
     gl.drawElements(gl.TRIANGLES, indexData.length, gl.UNSIGNED_SHORT, 0);
 
-    gl.bindVertexArray(null);
+    vao.unbind();
     rafId = window.requestAnimationFrame(render);
   }
 
@@ -116,10 +116,10 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
       return;
     }
     stop();
-    destroyVertexArray(gl, vao);
-    destroyBuffer(gl, vertexBuffer.buffer);
-    destroyBuffer(gl, indexBuffer.buffer);
-    destroyProgram(gl, program);
+    vao.destroy();
+    vertexBuffer.destroy();
+    indexBuffer.destroy();
+    program.destroy();
     destroyed = true;
   }
 
