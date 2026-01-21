@@ -1,5 +1,6 @@
 import { GLBuffer } from './buffers';
 import { setSizedCanvas } from './canvas';
+import { CameraControls } from './cameraControls';
 import { getGLContext } from './context';
 import { QuadSphereGenerator } from './geometry/quadSphere';
 import { Program, VERTEX_SHADER, FRAGMENT_SHADER } from './shaders';
@@ -17,6 +18,8 @@ type Engine = {
 export function createEngine(canvas: HTMLCanvasElement): Engine {
   const gl = getGLContext(canvas);
   gl.clearColor(0.05, 0.07, 0.12, 1.0);
+
+  const controls = new CameraControls(canvas);
   gl.enable(gl.DEPTH_TEST);
 
   const program = new Program(gl, VERTEX_SHADER, FRAGMENT_SHADER);
@@ -59,56 +62,6 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
   const viewMatrix = new Float32Array(16);
   const projectionMatrix = new Float32Array(16);
 
-  // Camera controls
-  let theta = 0; // azimuthal angle
-  let phi = 0; // polar angle
-  let radius = 2;
-
-  // Smoothing deltas
-  let thetaSmooth = 0;
-  let phiSmooth = 0;
-  let radiusSmooth = 0;
-
-  // Mouse drag state
-  let isDragging = false;
-  let lastMouseX = 0;
-  let lastMouseY = 0;
-
-  // Mouse event listeners
-  canvas.addEventListener('mousedown', (event) => {
-    isDragging = true;
-    lastMouseX = event.clientX;
-    lastMouseY = event.clientY;
-    event.preventDefault();
-  });
-
-  canvas.addEventListener('mousemove', (event) => {
-    if (isDragging) {
-      const deltaX = event.clientX - lastMouseX;
-      const deltaY = event.clientY - lastMouseY;
-      const sensitivity = 0.001;
-      thetaSmooth += deltaX * sensitivity;
-      phiSmooth += deltaY * sensitivity;
-      lastMouseX = event.clientX;
-      lastMouseY = event.clientY;
-      event.preventDefault();
-    }
-  });
-
-  canvas.addEventListener('mouseup', () => {
-    isDragging = false;
-  });
-
-  canvas.addEventListener('mouseleave', () => {
-    isDragging = false;
-  });
-
-  canvas.addEventListener('wheel', (event) => {
-    const zoomSensitivity = 0.001;
-    radiusSmooth += event.deltaY * zoomSensitivity;
-    event.preventDefault();
-  });
-
   // Prevent page scrolling
   document.addEventListener('wheel', (event) => {
     event.preventDefault();
@@ -121,22 +74,12 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
     const aspect = gl.canvas.width / gl.canvas.height;
     makePerspectiveMatrix(projectionMatrix, (60 * Math.PI) / 180, aspect, 0.1, 100);
 
-    theta += thetaSmooth;
-    phi += phiSmooth;
-    radius += radiusSmooth;
-
-    thetaSmooth *= 0.8;
-    phiSmooth *= 0.8;
-    radiusSmooth *= 0.8;
-
-    // Clamp phi and radius to avoid flipping/extremes
-    phi = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, phi));
-    radius = Math.max(1.0, Math.min(10, radius));
+    controls.update();
 
     const eye = {
-      x: radius * Math.cos(phi) * Math.cos(theta),
-      y: radius * Math.sin(phi),
-      z: radius * Math.cos(phi) * Math.sin(theta),
+      x: controls.radius * Math.cos(controls.phi) * Math.cos(controls.theta),
+      y: controls.radius * Math.sin(controls.phi),
+      z: controls.radius * Math.cos(controls.phi) * Math.sin(controls.theta),
     };
     const target = { x: 0, y: 0, z: 0 };
     makeLookAtMatrix(viewMatrix, eye, target);
