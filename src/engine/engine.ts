@@ -5,9 +5,7 @@ import { QuadSphereGenerator } from './geometry/quadSphere';
 import { Program, VERTEX_SHADER, FRAGMENT_SHADER } from './shaders';
 import { VertexArray } from './vaos';
 import { GLTexture2D } from './textures';
-import { makeViewMatrix, makePerspectiveMatrix } from './matrices';
-
-
+import { makeLookAtMatrix, makePerspectiveMatrix } from './matrices';
 
 type Engine = {
   gl: WebGL2RenderingContext;
@@ -48,11 +46,6 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
     gl.bindBuffer(indexBuffer.targetEnum, indexBuffer.handle);
   });
 
-  const timeLocation = program.getUniformLocation('uTime');
-  if (!timeLocation) {
-    throw new Error('Failed to find uTime uniform');
-  }
-
   const viewLocation = program.getUniformLocation('uView');
   const projectionLocation = program.getUniformLocation('uProjection');
   const textureLocation = program.getUniformLocation('uTexture');
@@ -63,7 +56,7 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
   let rafId: number | null = null;
   let destroyed = false;
 
-  const viewMatrix = makeViewMatrix({ x: 0, y: 0, z: -2 });
+  const viewMatrix = new Float32Array(16);
   const projectionMatrix = new Float32Array(16);
 
   function render(timeMs: number) {
@@ -74,10 +67,18 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
     const aspect = gl.canvas.width / gl.canvas.height;
     makePerspectiveMatrix(projectionMatrix, (60 * Math.PI) / 180, aspect, 0.1, 100);
 
+    const radius = 2;
+    const eye = {
+      x: Math.cos(time * 0.5) * radius,
+      y: 0,
+      z: Math.sin(time * 0.5) * radius,
+    };
+    const target = { x: 0, y: 0, z: 0 };
+    makeLookAtMatrix(viewMatrix, eye, target);
+
     program.use();
     vao.bind();
 
-    gl.uniform1f(timeLocation, time);
     gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
     gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
     texture.bind(0);

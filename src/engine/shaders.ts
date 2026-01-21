@@ -71,20 +71,13 @@ export class Program {
 export const VERTEX_SHADER = `#version 300 es
 in vec3 aPosition;
 in vec2 aUv;
-uniform float uTime;
 uniform mat4 uView;
 uniform mat4 uProjection;
 out vec3 vColor;
 out vec2 vUv;
 
 void main() {
-  float angle = uTime * 0.5;
-  mat3 rotY = mat3(
-    cos(angle), 0.0, sin(angle),
-    0.0,        1.0, 0.0,
-   -sin(angle), 0.0, cos(angle)
-  );
-  vec3 world = rotY * aPosition;
+  vec3 world = aPosition;
   vec3 normal = normalize(world);
   gl_Position = uProjection * uView * vec4(world, 1.0);
   vColor = normal * 0.5 + 0.5;
