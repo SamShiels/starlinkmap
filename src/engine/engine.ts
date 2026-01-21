@@ -21,7 +21,7 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
 
   const program = new Program(gl, VERTEX_SHADER, FRAGMENT_SHADER);
 
-  const texture = new GLTexture2D(gl);
+  const texture = new GLTexture2D(gl, { wrapS: gl.REPEAT, wrapT: gl.CLAMP_TO_EDGE });
   const img = new Image();
   img.onload = () => {
     texture.uploadFromImage(img);
@@ -59,6 +59,48 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
   const viewMatrix = new Float32Array(16);
   const projectionMatrix = new Float32Array(16);
 
+  // Camera controls
+  let theta = 0; // azimuthal angle
+  let phi = 0; // polar angle
+
+  let thetaSmooth = 0; // azimuthal angle
+  let phiSmooth = 0; // polar angle
+  const radius = 2;
+
+  // Mouse drag state
+  let isDragging = false;
+  let lastMouseX = 0;
+  let lastMouseY = 0;
+
+  // Mouse event listeners
+  canvas.addEventListener('mousedown', (event) => {
+    isDragging = true;
+    lastMouseX = event.clientX;
+    lastMouseY = event.clientY;
+    event.preventDefault();
+  });
+
+  canvas.addEventListener('mousemove', (event) => {
+    if (isDragging) {
+      const deltaX = event.clientX - lastMouseX;
+      const deltaY = event.clientY - lastMouseY;
+      const sensitivity = 0.001;
+      thetaSmooth += deltaX * sensitivity;
+      phiSmooth += deltaY * sensitivity;
+      lastMouseX = event.clientX;
+      lastMouseY = event.clientY;
+      event.preventDefault();
+    }
+  });
+
+  canvas.addEventListener('mouseup', () => {
+    isDragging = false;
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    isDragging = false;
+  });
+
   function render(timeMs: number) {
     const time = timeMs * 0.001;
     setSizedCanvas(gl);
@@ -67,11 +109,19 @@ export function createEngine(canvas: HTMLCanvasElement): Engine {
     const aspect = gl.canvas.width / gl.canvas.height;
     makePerspectiveMatrix(projectionMatrix, (60 * Math.PI) / 180, aspect, 0.1, 100);
 
-    const radius = 2;
+    theta += thetaSmooth;
+    phi += phiSmooth;
+
+    thetaSmooth = thetaSmooth * 0.8;
+    phiSmooth = phiSmooth * 0.8;
+
+    // Clamp phi to avoid flipping
+    phi = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, phi));
+
     const eye = {
-      x: Math.cos(time * 0.5) * radius,
-      y: 0,
-      z: Math.sin(time * 0.5) * radius,
+      x: radius * Math.cos(phi) * Math.cos(theta),
+      y: radius * Math.sin(phi),
+      z: radius * Math.cos(phi) * Math.sin(theta),
     };
     const target = { x: 0, y: 0, z: 0 };
     makeLookAtMatrix(viewMatrix, eye, target);
