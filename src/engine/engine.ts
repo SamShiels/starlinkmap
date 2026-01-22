@@ -49,7 +49,7 @@ export async function createEngine(
   const satelliteData = await fetchSatellites();
   const satellites: Satellite[] = satelliteData.map(data => {
     // Scale positions and velocities for visualization (km to some unit)
-    const scale = 0.000105; // e.g., 1 unit = 1 km
+    const scale = 0.00011; // e.g., 1 unit = 1 km
     const position = {
       x: data.position.x * scale,
       y: data.position.y * scale,
