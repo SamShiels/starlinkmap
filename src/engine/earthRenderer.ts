@@ -121,8 +121,9 @@ export class EarthRenderer {
     this.nightTexture.bind(1);
     this.gl.uniform1i(this.nightTextureLocation, 1);
 
+    const sunDirection = this.getSunDirection();
     // Fixed sun direction (can be made dynamic later)
-    this.gl.uniform3f(this.sunDirectionLocation, 1.0, 0.0, 0.0);
+    this.gl.uniform3f(this.sunDirectionLocation, sunDirection[0], 0.0, sunDirection[1]);
 
     this.gl.drawElements(this.gl.TRIANGLES, this.geo.indexCount, this.gl.UNSIGNED_SHORT, 0);
 
@@ -136,5 +137,17 @@ export class EarthRenderer {
     this.dayTexture.destroy();
     this.nightTexture.destroy();
     this.program.destroy();
+  }
+
+  private getSunDirection(): [number, number] {
+    const millisecondsInADay = 86400000;
+
+    const dayProgress = (Date.now() % millisecondsInADay) / millisecondsInADay;
+    const sunAngle = (dayProgress  * Math.PI * 2) - (Math.PI / 2);
+
+    const x = Math.cos(sunAngle);
+    const y = Math.sin(sunAngle);
+
+    return [x, y];
   }
 }
