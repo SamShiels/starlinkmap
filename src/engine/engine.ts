@@ -20,7 +20,8 @@ type SatelliteData = {
 };
 
 async function fetchSatellites(): Promise<SatelliteData[]> {
-  const response = await fetch('http://localhost:8000/satellites');
+  const baseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000';
+  const response = await fetch(`${baseUrl}/satellites`);
   if (!response.ok) {
     throw new Error('Failed to fetch satellites');
   }
