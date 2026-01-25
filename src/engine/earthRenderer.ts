@@ -122,8 +122,7 @@ export class EarthRenderer {
     this.gl.uniform1i(this.nightTextureLocation, 1);
 
     const sunDirection = this.getSunDirection();
-    // Fixed sun direction (can be made dynamic later)
-    this.gl.uniform3f(this.sunDirectionLocation, sunDirection[0], 0.0, sunDirection[1]);
+    this.gl.uniform3f(this.sunDirectionLocation, sunDirection[0], sunDirection[1], sunDirection[2]);
 
     this.gl.drawElements(this.gl.TRIANGLES, this.geo.indexCount, this.gl.UNSIGNED_SHORT, 0);
 
@@ -139,15 +138,26 @@ export class EarthRenderer {
     this.program.destroy();
   }
 
-  private getSunDirection(): [number, number] {
+  private getSunDirection(): [number, number, number] {
+    const now = new Date();
     const millisecondsInADay = 86400000;
 
-    const dayProgress = (Date.now() % millisecondsInADay) / millisecondsInADay;
-    const sunAngle = (dayProgress  * Math.PI * 2) - (Math.PI / 2);
+    const dayProgress = (now.getTime() % millisecondsInADay) / millisecondsInADay;
+    const sunAngle = dayProgress * Math.PI * 2 - Math.PI / 2;
 
-    const x = Math.cos(sunAngle);
-    const y = Math.sin(sunAngle);
+    const startOfYear = new Date(now.getFullYear(), 0, 0);
+    const startOfNextYear = new Date(now.getFullYear() + 1, 0, 0);
+    const msIntoYear = now.getTime() - startOfYear.getTime();
+    const msPerYear = startOfNextYear.getTime() - startOfYear.getTime();
+    const yearProgress = msIntoYear / msPerYear;
 
-    return [x, y];
+    const axialTilt = (23.44 * Math.PI) / 180;
+    const declination = Math.sin(yearProgress * Math.PI * 2) * axialTilt;
+
+    const x = Math.cos(declination) * Math.cos(sunAngle);
+    const y = Math.sin(declination);
+    const z = Math.cos(declination) * Math.sin(sunAngle);
+
+    return [x, y, z];
   }
 }
