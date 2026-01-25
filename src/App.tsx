@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { createEngine, type Engine } from './engine/engine';
+import { Mapper } from './engine/mapper';
 import type { Satellite } from './engine/satellite';
 import './App.css';
 
 function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayRef = useRef<HTMLCanvasElement | null>(null);
-  const [engineCleanup, setEngineCleanup] = useState<(() => void) | null>(null);
-  const [engine, setEngine] = useState<Engine | null>(null);
+  const [mapper, setMapper] = useState<Mapper | null>(null);
   const [hoveredName, setHoveredName] = useState<string | null>(null);
   const [selectedSatellite, setSelectedSatellite] = useState<Satellite | null>(null);
   const [satellites, setSatellites] = useState<Satellite[]>([]);
@@ -17,39 +16,34 @@ function App() {
 
   useEffect(() => {
     if (!canvasRef.current || !overlayRef.current) return;
-    const initEngine = async () => {
-      try {
-        const engine = await createEngine(canvasRef.current!, {
-          overlayCanvas: overlayRef.current!,
-          onHoverChange: setHoveredName,
-          onSelectChange: setSelectedSatellite,
-          onSatellitesLoaded: (loaded) => {
-            setSatellites([...loaded]);
-            setLoading(false);
-            setLoadError(null);
-          },
-          onSatellitesError: (message) => {
-            setLoadError(message);
-            setLoading(false);
-          },
-        });
-        engine.start();
-        setEngine(engine);
-        setEngineCleanup(() => engine.destroy);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to load satellites';
-        setLoadError(message);
-        setLoading(false);
-      }
-    };
-    initEngine();
-  }, []);
+    let instance: Mapper | null = null;
+    try {
+      instance = new Mapper(canvasRef.current, {
+        overlayCanvas: overlayRef.current,
+        onHoverChange: setHoveredName,
+        onSelectChange: setSelectedSatellite,
+        onSatellitesLoaded: (loaded) => {
+          setSatellites([...loaded]);
+          setLoading(false);
+          setLoadError(null);
+        },
+        onSatellitesError: (message) => {
+          setLoadError(message);
+          setLoading(false);
+        },
+      });
+      instance.start();
+      setMapper(instance);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load satellites';
+      setLoadError(message);
+      setLoading(false);
+    }
 
-  useEffect(() => {
     return () => {
-      if (engineCleanup) engineCleanup();
+      instance?.destroy();
     };
-  }, [engineCleanup]);
+  }, []);
 
   const matches = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
@@ -60,7 +54,7 @@ function App() {
   }, [searchTerm, satellites]);
 
   const selectSatellite = (id: number | null) => {
-    engine?.selectSatellite(id);
+    mapper?.selectSatellite(id);
   };
 
   const handleSubmit = (event: FormEvent) => {
