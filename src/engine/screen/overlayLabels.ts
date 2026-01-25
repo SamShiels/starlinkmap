@@ -18,6 +18,7 @@ export class OverlayLabels {
     projectionMatrix: Float32Array,
     satellites: Satellite[],
     eye: { x: number; y: number; z: number },
+    selectedSatelliteId: number
   ) {
     const { canvas } = this.context;
     const devicePixelRatio = window.devicePixelRatio || 1;
@@ -44,9 +45,10 @@ export class OverlayLabels {
     for (const satellite of satellites) {
       const satellitePosition = vec3.fromValues(satellite.position.x, satellite.position.y, satellite.position.z);
 
-      if (vec3.sqrDist(satellitePosition, eyeVector) > this._distanceThreshold * this._distanceThreshold) {
+      if (vec3.sqrDist(satellitePosition, eyeVector) > this._distanceThreshold * this._distanceThreshold &&   selectedSatelliteId !== satellite.id) {
         continue;
       }
+      
       vec4.set(this.clipSpacePosition, satellite.position.x, satellite.position.y, satellite.position.z, 1.0);
       vec4.transformMat4(this.clipSpacePosition, this.clipSpacePosition, this.viewProjectionMatrix);
       const clipW = this.clipSpacePosition[3];

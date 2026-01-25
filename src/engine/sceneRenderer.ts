@@ -79,7 +79,7 @@ export class SceneRenderer {
     // Render selected orbit
     this.orbitRenderer.render(viewMatrix, projectionMatrix);
 
-    this.overlayLabels?.render(viewMatrix, projectionMatrix, this.satellites, eye);
+    this.overlayLabels?.render(viewMatrix, projectionMatrix, this.satellites, eye, this.selectedSatelliteId);
 
     this.updateHover(viewMatrix, projectionMatrix, eye);
   }

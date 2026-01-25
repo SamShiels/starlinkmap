@@ -85,7 +85,7 @@ export class CameraControls {
 
     // Clamp phi and radius to avoid flipping/extremes
     this.phi = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, this.phi));
-    this.radius = Math.max(1.0, Math.min(10, this.radius));
+    this.radius = Math.max(0.9, Math.min(10, this.radius));
   }
 
   public getEyePosition(): { x: number; y: number; z: number } {
