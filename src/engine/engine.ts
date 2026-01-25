@@ -35,11 +35,12 @@ type Engine = {
   stop: () => void;
   destroy: () => void;
   selectSatellite: (id: number | null) => void;
+  setOverlayContext: (ctx: CanvasRenderingContext2D | null) => void;
 };
 
 export async function createEngine(
   canvas: HTMLCanvasElement,
-  options: { onHoverChange?: (name: string | null) => void } = {},
+  options: { onHoverChange?: (name: string | null) => void; overlayCanvas?: HTMLCanvasElement } = {},
 ): Promise<Engine> {
   const gl = getGLContext(canvas);
   gl.clearColor(0.01, 0.01, 0.1, 1.0);
@@ -64,7 +65,8 @@ export async function createEngine(
     return new Satellite(data.id, data.name, position, velocity, data.angular_velocity_rad_per_s);
   });
 
-  const sceneRenderer = new SceneRenderer(gl, satellites, options.onHoverChange);
+  const overlayCtx = options.overlayCanvas?.getContext('2d') ?? null;
+  const sceneRenderer = new SceneRenderer(gl, satellites, options.onHoverChange, overlayCtx);
 
   let rafId: number | null = null;
   let destroyed = false;
@@ -91,7 +93,6 @@ export async function createEngine(
 
   const handleClick = (event: MouseEvent) => {
     setPointerFromEvent(event);
-    console.log(controls.isDragging);
     if (!controls.isDragging) {
       sceneRenderer.selectHoveredSatellite();
     }
@@ -149,10 +150,17 @@ export async function createEngine(
     stop();
     canvasEl.removeEventListener('mousemove', handleMouseMove);
     canvasEl.removeEventListener('mouseleave', handleMouseLeave);
-    canvasEl.removeEventListener('click', handleClick);
+    canvasEl.removeEventListener('mouseup', handleClick);
     sceneRenderer.destroy();
     destroyed = true;
   }
 
-  return { gl, start, stop, destroy, selectSatellite: (id: number | null) => sceneRenderer.setSelectedSatellite(id) };
+  return {
+    gl,
+    start,
+    stop,
+    destroy,
+    selectSatellite: (id: number | null) => sceneRenderer.setSelectedSatellite(id),
+    setOverlayContext: (ctx: CanvasRenderingContext2D | null) => sceneRenderer.setOverlayContext(ctx),
+  };
 }
