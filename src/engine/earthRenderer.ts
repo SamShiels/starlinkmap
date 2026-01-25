@@ -37,7 +37,7 @@ void main() {
   float sunAmount = clamp(dot(normal, sunDir), 0.0, 1.0);
 
   vec3 dayColor = texture(uDayTexture, vUv).rgb;
-  vec3 nightColor = texture(uNightTexture, vUv).rgb;
+  vec3 nightColor = min(texture(uNightTexture, vUv).rgb, 0.3);
 
   vec3 color = mix(nightColor, dayColor, sunAmount);
   outColor = vec4(color, 1.0);
