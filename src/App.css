@@ -286,6 +286,10 @@ h1 {
     padding: 1.5rem;
   }
 
+  .search-panel {
+    display: none;
+  }
+
   .hud {
     padding: 1.25rem;
   }

@@ -93,7 +93,7 @@ export class CameraControls {
           this._touchMode = 'pinch';
           this._mouseDown = false;
           this._isDragging = false;
-          this._lastTouchDistance = this._touchDistance(event.touches[0], event.touches[1]);
+          this._lastTouchDistance = -this._touchDistance(event.touches[0], event.touches[1]);
         }
         event.preventDefault();
       },
