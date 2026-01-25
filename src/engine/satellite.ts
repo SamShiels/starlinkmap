@@ -1,12 +1,32 @@
 export class Satellite {
-  public id: number;
-  public name: string;
-  public initialPosition: { x: number; y: number; z: number };
-  public position: { x: number; y: number; z: number };
-  public velocity: { x: number; y: number; z: number };
-  private orbitNormal: { x: number; y: number; z: number };
-  private orbitRadius: number;
-  private angularSpeed: number;
+  private _id: number;
+  private _name: string;
+  private _initialPosition: { x: number; y: number; z: number };
+  private _position: { x: number; y: number; z: number };
+  private _velocity: { x: number; y: number; z: number };
+  private _orbitNormal: { x: number; y: number; z: number };
+  private _orbitRadius: number;
+  private _angularSpeed: number;
+
+  public get id(): number {
+    return this._id;
+  }
+
+  public get name(): string {
+    return this._name;
+  }
+
+  public get initialPosition(): { x: number; y: number; z: number } {
+    return this._initialPosition;
+  }
+
+  public get position(): { x: number; y: number; z: number } {
+    return this._position;
+  }
+
+  public get velocity(): { x: number; y: number; z: number } {
+    return this._velocity;
+  }
 
   constructor(
     id: number,
@@ -15,54 +35,54 @@ export class Satellite {
     velocity: { x: number; y: number; z: number },
     angularVelocityRadPerS: number
   ) {
-    this.id = id;
-    this.name = name;
-    this.initialPosition = { ...position };
-    this.position = { ...position };
-    this.velocity = { ...velocity };
+    this._id = id;
+    this._name = name;
+    this._initialPosition = { ...position };
+    this._position = { ...position };
+    this._velocity = { ...velocity };
 
-    this.orbitRadius = Math.hypot(position.x, position.y, position.z);
-    let orbitNormal = this.normalize(this.cross(position, velocity));
+    this._orbitRadius = Math.hypot(position.x, position.y, position.z);
+    let orbitNormal = this._normalize(this._cross(position, velocity));
     if (orbitNormal.x === 0 && orbitNormal.y === 0 && orbitNormal.z === 0) {
       orbitNormal = { x: 0, y: 1, z: 0 };
     }
-    this.orbitNormal = orbitNormal;
-    this.angularSpeed = angularVelocityRadPerS;
+    this._orbitNormal = orbitNormal;
+    this._angularSpeed = angularVelocityRadPerS;
   }
 
-  update(dtSeconds: number) {
-    if (this.orbitRadius === 0 || this.angularSpeed === 0) {
+  public update(dtSeconds: number) {
+    if (this._orbitRadius === 0 || this._angularSpeed === 0) {
       // Fallback to linear motion if orbit parameters are invalid
-      this.position.x += this.velocity.x * dtSeconds;
-      this.position.y += this.velocity.y * dtSeconds;
-      this.position.z += this.velocity.z * dtSeconds;
+      this._position.x += this._velocity.x * dtSeconds;
+      this._position.y += this._velocity.y * dtSeconds;
+      this._position.z += this._velocity.z * dtSeconds;
       return;
     }
 
-    const angle = this.angularSpeed * dtSeconds;
-    const axis = this.orbitNormal;
+    const angle = this._angularSpeed * dtSeconds;
+    const axis = this._orbitNormal;
 
     // Rotate current position around orbit normal to advance along the orbit
-    const rotated = this.rotateAroundAxis(this.position, axis, angle);
-    this.position = rotated;
+    const rotated = this._rotateAroundAxis(this._position, axis, angle);
+    this._position = rotated;
 
     // Velocity is tangential: ω × r (axis is unit length)
-    const tangent = this.cross(axis, rotated);
-    const speedScale = this.angularSpeed;
-    this.velocity = {
+    const tangent = this._cross(axis, rotated);
+    const speedScale = this._angularSpeed;
+    this._velocity = {
       x: tangent.x * speedScale,
       y: tangent.y * speedScale,
       z: tangent.z * speedScale,
     };
   }
 
-  getOrbitPath(points: number): { x: number; y: number; z: number }[] {
+  public getOrbitalPath(points: number): { x: number; y: number; z: number }[] {
     const positions = [];
-    const axis = this.orbitNormal;
+    const axis = this._orbitNormal;
 
     for (let i = 0; i < points; i++) {
       const theta = i / points * Math.PI * 2;
-      const tiltedPoint = this.rotateAroundAxis(this.initialPosition, axis, theta);
+      const tiltedPoint = this._rotateAroundAxis(this._initialPosition, axis, theta);
 
       positions.push(tiltedPoint);
     }
@@ -70,7 +90,7 @@ export class Satellite {
     return positions;
   }
 
-  private cross(
+  private _cross(
     a: { x: number; y: number; z: number },
     b: { x: number; y: number; z: number }
   ): { x: number; y: number; z: number } {
@@ -81,13 +101,13 @@ export class Satellite {
     };
   }
 
-  private normalize(v: { x: number; y: number; z: number }): { x: number; y: number; z: number } {
+  private _normalize(v: { x: number; y: number; z: number }): { x: number; y: number; z: number } {
     const len = Math.hypot(v.x, v.y, v.z);
     if (len === 0) return { x: 0, y: 0, z: 0 };
     return { x: v.x / len, y: v.y / len, z: v.z / len };
   }
 
-  private rotateAroundAxis(
+  private _rotateAroundAxis(
     v: { x: number; y: number; z: number },
     axis: { x: number; y: number; z: number },
     angle: number
@@ -96,7 +116,7 @@ export class Satellite {
     const sinA = Math.sin(angle);
 
     const dot = v.x * axis.x + v.y * axis.y + v.z * axis.z;
-    const cross = this.cross(axis, v);
+    const cross = this._cross(axis, v);
 
     return {
       x: v.x * cosA + cross.x * sinA + axis.x * dot * (1.0 - cosA),

@@ -72,7 +72,7 @@ export class SceneRenderer {
     }
 
     this.selectedSatelliteId = id;
-    const orbitPath = sat.getOrbitPath(this.orbitSegments);
+    const orbitPath = sat.getOrbitalPath(this.orbitSegments);
     this.orbitRenderer.setPath(orbitPath);
   }
 
