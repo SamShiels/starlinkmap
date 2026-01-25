@@ -93,7 +93,7 @@ export class CameraControls {
           this._touchMode = 'pinch';
           this._mouseDown = false;
           this._isDragging = false;
-          this._lastTouchDistance = -this._touchDistance(event.touches[0], event.touches[1]);
+          this._lastTouchDistance = this._touchDistance(event.touches[0], event.touches[1]);
         }
         event.preventDefault();
       },
@@ -124,7 +124,7 @@ export class CameraControls {
           const distance = this._touchDistance(event.touches[0], event.touches[1]);
           const delta = distance - this._lastTouchDistance;
           const zoomSensitivity = SENS * 0.5;
-          this._radiusSmooth += delta * zoomSensitivity;
+          this._radiusSmooth -= delta * zoomSensitivity;
           this._lastTouchDistance = distance;
         }
         event.preventDefault();
