@@ -11,6 +11,13 @@ import os
 
 satellites = []
 ts = load.timescale()
+allowed_origins = [
+    origin.strip()
+    for origin in os.getenv("ALLOWED_ORIGINS", "*").split(",")
+    if origin.strip()
+]
+if not allowed_origins:
+    allowed_origins = ["*"]
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -60,7 +67,7 @@ app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -81,12 +88,6 @@ async def get_satellites(limit: int = 0):
         try:
             geocentric = sat.at(t)
 
-            # Get Position (Lat/Lon/Elevation)
-            subpoint = wgs84.subpoint(geocentric)
-            # lat = subpoint.latitude.degrees
-            # lon = subpoint.longitude.degrees
-            # alt = subpoint.elevation.km  # in km
-
             # Get Velocity
             position_vector, velocity_vector = geocentric.frame_xyz_and_velocity(itrs)
 
@@ -100,26 +101,14 @@ async def get_satellites(limit: int = 0):
             # Angular velocity (for circular orbit approximation: ω = v / r)
             angular_velocity_rad_per_s = speed / orbital_radius_km
 
-            # Direction of travel (normalized velocity vector)
-            # direction = {
-            #     "x": vel_km[0] / speed if speed > 0 else 0,
-            #     "y": vel_km[2] / speed if speed > 0 else 0,
-            #     "z": -vel_km[1] / speed if speed > 0 else 0
-            # }
-
             # NORAD ID
             norad_id = sat.model.satnum
 
             results.append({
                 "id": norad_id,
                 "name": sat.name,
-                # "latitude": lat,
-                # "longitude": lon,
-                # "altitude_km": alt,
-                # "speed_kms": speed,
                 "orbital_radius_km": orbital_radius_km,
                 "angular_velocity_rad_per_s": angular_velocity_rad_per_s,
-                # "direction": direction,
                 "position": {
                     "x": pos_km[0],
                     "y": pos_km[2],

@@ -34,6 +34,7 @@ type Engine = {
   start: () => void;
   stop: () => void;
   destroy: () => void;
+  selectSatellite: (id: number | null) => void;
 };
 
 export async function createEngine(
@@ -73,7 +74,7 @@ export async function createEngine(
   const viewMatrix = new Float32Array(16);
   const projectionMatrix = new Float32Array(16);
 
-  const handleMouseMove = (event: MouseEvent) => {
+  const setPointerFromEvent = (event: MouseEvent) => {
     const rect = canvasEl.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     const x = (event.clientX - rect.left) * dpr;
@@ -81,12 +82,22 @@ export async function createEngine(
     sceneRenderer.setPointer({ x, y });
   };
 
+  const handleMouseMove = (event: MouseEvent) => {
+    setPointerFromEvent(event);
+  };
+
   const handleMouseLeave = () => {
     sceneRenderer.setPointer(null);
   };
 
+  const handleClick = (event: MouseEvent) => {
+    setPointerFromEvent(event);
+    sceneRenderer.selectHoveredSatellite();
+  };
+
   canvasEl.addEventListener('mousemove', handleMouseMove);
   canvasEl.addEventListener('mouseleave', handleMouseLeave);
+  canvasEl.addEventListener('click', handleClick);
 
   // Prevent page scrolling
   document.addEventListener('wheel', (event) => {
@@ -134,9 +145,10 @@ export async function createEngine(
     stop();
     canvasEl.removeEventListener('mousemove', handleMouseMove);
     canvasEl.removeEventListener('mouseleave', handleMouseLeave);
+    canvasEl.removeEventListener('click', handleClick);
     sceneRenderer.destroy();
     destroyed = true;
   }
 
-  return { gl, start, stop, destroy };
+  return { gl, start, stop, destroy, selectSatellite: (id: number | null) => sceneRenderer.setSelectedSatellite(id) };
 }

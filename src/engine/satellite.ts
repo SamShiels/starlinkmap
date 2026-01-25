@@ -1,6 +1,7 @@
 export class Satellite {
   public id: number;
   public name: string;
+  public initialPosition: { x: number; y: number; z: number };
   public position: { x: number; y: number; z: number };
   public velocity: { x: number; y: number; z: number };
   private orbitNormal: { x: number; y: number; z: number };
@@ -16,6 +17,7 @@ export class Satellite {
   ) {
     this.id = id;
     this.name = name;
+    this.initialPosition = { ...position };
     this.position = { ...position };
     this.velocity = { ...velocity };
 
@@ -52,6 +54,20 @@ export class Satellite {
       y: tangent.y * speedScale,
       z: tangent.z * speedScale,
     };
+  }
+
+  getOrbitPath(points: number): { x: number; y: number; z: number }[] {
+    const positions = [];
+    const axis = this.orbitNormal;
+
+    for (let i = 0; i < points; i++) {
+      const theta = i / points * Math.PI * 2;
+      const tiltedPoint = this.rotateAroundAxis(this.initialPosition, axis, theta);
+
+      positions.push(tiltedPoint);
+    }
+
+    return positions;
   }
 
   private cross(

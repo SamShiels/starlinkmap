@@ -8,4 +8,5 @@ services:
     environment:
       - ST_USERNAME=sam.shiels@gmail.com
       - ST_PASSWORD=Dontstealit!12555
+      - ALLOWED_ORIGIN=http://localhost:8000
     restart: unless-stopped
