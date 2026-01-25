@@ -99,7 +99,6 @@ export class Mapper {
   private _loadSatellites() {
     fetchSatellitesFromApi(undefined, (partial) => {
       this._satelliteRenderer.setSatellites(partial);
-      this._options.onSatellitesLoaded?.(partial);
     })
       .then((loaded) => {
       this._satelliteRenderer.setSatellites(loaded);
