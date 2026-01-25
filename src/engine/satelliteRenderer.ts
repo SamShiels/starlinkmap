@@ -6,31 +6,40 @@ import { Satellite } from './satellite';
 const POINT_VERTEX_SHADER = `#version 300 es
 in vec3 aCenter;
 in vec2 aCorner;
+in float aIsSelected;
 uniform mat4 uView;
 uniform mat4 uProjection;
 uniform float uSize;
+uniform float uSelectedScale;
 out vec2 vCorner;
+out float vIsSelected;
 void main() {
   // Extract camera right/up vectors from view matrix columns
   vec3 right = vec3(uView[0][0], uView[1][0], uView[2][0]);
   vec3 up = vec3(uView[0][1], uView[1][1], uView[2][1]);
 
-  vec3 worldPos = aCenter + (right * aCorner.x + up * aCorner.y) * uSize;
+  float size = uSize * mix(1.0, uSelectedScale, aIsSelected);
+  vec3 worldPos = aCenter + (right * aCorner.x + up * aCorner.y) * size;
   gl_Position = uProjection * uView * vec4(worldPos, 1.0);
   vCorner = aCorner;
+  vIsSelected = aIsSelected;
 }
 `;
 
 const POINT_FRAGMENT_SHADER = `#version 300 es
 precision highp float;
 in vec2 vCorner;
+in float vIsSelected;
 out vec4 outColor;
 void main() {
   float r2 = dot(vCorner, vCorner);
   if (r2 > 1.0) {
     discard;
   }
-  outColor = vec4(1.0, 1.0, 1.0, 1.0);
+  vec3 baseColor = vec3(1.0);
+  vec3 selectedColor = vec3(1.0, 0.92, 0.2);
+  vec3 color = mix(baseColor, selectedColor, vIsSelected);
+  outColor = vec4(color, 1.0);
 }
 `;
 
@@ -43,7 +52,9 @@ export class SatelliteRenderer {
   private viewLocation: WebGLUniformLocation | null;
   private projectionLocation: WebGLUniformLocation | null;
   private sizeLocation: WebGLUniformLocation | null;
+  private selectedScaleLocation: WebGLUniformLocation | null;
   private readonly quadSize = 0.002;
+  private readonly selectedScale = 2.2;
 
   constructor(gl: WebGL2RenderingContext, satellites: Satellite[]) {
     this.gl = gl;
@@ -54,7 +65,7 @@ export class SatelliteRenderer {
     // Create buffers: 4 verts per satellite, 6 indices per satellite
     this.vertexBuffer = new GLBuffer(
       gl,
-      new Float32Array(Math.max(1, satellites.length) * 4 * 5),
+      new Float32Array(Math.max(1, satellites.length) * 4 * 6),
       { target: 'vertex', usage: gl.DYNAMIC_DRAW },
     );
     this.indexBuffer = new GLBuffer(
@@ -65,12 +76,14 @@ export class SatelliteRenderer {
 
     const centerLoc = gl.getAttribLocation(this.program.handle, 'aCenter');
     const cornerLoc = gl.getAttribLocation(this.program.handle, 'aCorner');
+    const selectedLoc = gl.getAttribLocation(this.program.handle, 'aIsSelected');
 
     this.vao = new VertexArray(gl, (builder) => {
       gl.bindBuffer(this.vertexBuffer.targetEnum, this.vertexBuffer.handle);
-      const stride = 5 * Float32Array.BYTES_PER_ELEMENT;
+      const stride = 6 * Float32Array.BYTES_PER_ELEMENT;
       builder.addPointer({ location: centerLoc, size: 3, stride });
       builder.addPointer({ location: cornerLoc, size: 2, stride });
+      builder.addPointer({ location: selectedLoc, size: 1, stride, offset: 5 * Float32Array.BYTES_PER_ELEMENT });
       gl.bindBuffer(this.indexBuffer.targetEnum, this.indexBuffer.handle);
     });
 
@@ -78,17 +91,24 @@ export class SatelliteRenderer {
     this.viewLocation = this.program.getUniformLocation('uView');
     this.projectionLocation = this.program.getUniformLocation('uProjection');
     this.sizeLocation = this.program.getUniformLocation('uSize');
+    this.selectedScaleLocation = this.program.getUniformLocation('uSelectedScale');
   }
 
-  render(viewMatrix: Float32Array, projectionMatrix: Float32Array, satellites: Satellite[]) {
+  render(
+    viewMatrix: Float32Array,
+    projectionMatrix: Float32Array,
+    satellites: Satellite[],
+    selectedId: number | null,
+  ) {
     if (satellites.length === 0) return;
 
     // Build per-vertex data: center position + corner indicator
-    const data = new Float32Array(satellites.length * 4 * 5);
+    const data = new Float32Array(satellites.length * 4 * 6);
     const indices = new Uint32Array(satellites.length * 6);
     for (let i = 0; i < satellites.length; i++) {
       const sat = satellites[i];
-      const base = i * 20; // 4 verts * 5 floats
+      const base = i * 24; // 4 verts * 6 floats
+      const isSelected = selectedId !== null && sat.id === selectedId ? 1 : 0;
       const corners = [
         [-1, -1],
         [1, -1],
@@ -96,12 +116,13 @@ export class SatelliteRenderer {
         [1, 1],
       ];
       for (let c = 0; c < 4; c++) {
-        const offset = base + c * 5;
+        const offset = base + c * 6;
         data[offset] = sat.position.x;
         data[offset + 1] = sat.position.y;
         data[offset + 2] = sat.position.z;
         data[offset + 3] = corners[c][0];
         data[offset + 4] = corners[c][1];
+        data[offset + 5] = isSelected;
       }
 
       const iBase = i * 6;
@@ -122,6 +143,7 @@ export class SatelliteRenderer {
     this.gl.uniformMatrix4fv(this.viewLocation, false, viewMatrix);
     this.gl.uniformMatrix4fv(this.projectionLocation, false, projectionMatrix);
     this.gl.uniform1f(this.sizeLocation, this.quadSize * 0.5);
+    this.gl.uniform1f(this.selectedScaleLocation, this.selectedScale);
     this.gl.drawElements(this.gl.TRIANGLES, satellites.length * 6, this.gl.UNSIGNED_INT, 0);
 
     this.vao.unbind();

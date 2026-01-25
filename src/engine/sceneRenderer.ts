@@ -74,7 +74,7 @@ export class SceneRenderer {
     this.earthRenderer.render(viewMatrix, projectionMatrix);
 
     // Render satellites
-    this.satelliteRenderer.render(viewMatrix, projectionMatrix, this.satellites);
+    this.satelliteRenderer.render(viewMatrix, projectionMatrix, this.satellites, this.selectedSatelliteId);
 
     // Render selected orbit
     this.orbitRenderer.render(viewMatrix, projectionMatrix);
