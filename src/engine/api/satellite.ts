@@ -10,18 +10,52 @@ export type SatelliteApiData = {
   velocity: { vx: number; vy: number; vz: number };
 };
 
+type SatelliteApiResponse = {
+  count: number;
+  total?: number;
+  has_more?: boolean;
+  satellites: SatelliteApiData[];
+};
+
 const DEFAULT_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000';
 const POSITION_SCALE = 0.00011;
+const PAGE_SIZE = 500;
 
 export async function fetchSatellitesFromApi(
   baseUrl: string = DEFAULT_BASE_URL,
+  onBatch?: (satellites: Satellite[]) => void,
 ): Promise<Satellite[]> {
-  const response = await fetch(`${baseUrl}/satellites`);
-  if (!response.ok) {
-    throw new Error('Failed to load satellites');
+  const satellites: Satellite[] = [];
+  let offset = 0;
+  let total: number | undefined;
+  let hasMore = true;
+
+  // Fetch in batches to avoid API limits
+  while (hasMore) {
+    const page = await fetchSatellitePage(baseUrl, offset, PAGE_SIZE);
+    const mapped = mapApiDataToSatellites(page.satellites);
+    satellites.push(...mapped);
+    onBatch?.([...satellites]);
+    total = page.total ?? total ?? offset + page.count;
+    offset += page.count;
+
+    // Determine whether to continue
+    if (page.has_more !== undefined) {
+      hasMore = page.has_more;
+    } else if (total !== undefined) {
+      hasMore = offset < total;
+    } else {
+      // If server didn't provide total, stop when fewer than requested were returned
+      hasMore = page.count >= PAGE_SIZE;
+    }
+
+    // Safety net to avoid infinite loop if API returns count 0 with has_more true
+    if (page.count === 0) {
+      break;
+    }
   }
-  const data = await response.json();
-  return mapApiDataToSatellites(data.satellites);
+
+  return satellites;
 }
 
 function mapApiDataToSatellites(data: SatelliteApiData[]): Satellite[] {
@@ -46,4 +80,16 @@ function mapApiDataToSatellites(data: SatelliteApiData[]): Satellite[] {
       { altitudeKm: entry.orbital_radius_km, speedKms: entry.speed_kms },
     );
   });
+}
+
+async function fetchSatellitePage(
+  baseUrl: string,
+  offset: number,
+  limit: number,
+): Promise<SatelliteApiResponse> {
+  const response = await fetch(`${baseUrl}/satellites?offset=${offset}&limit=${limit}`);
+  if (!response.ok) {
+    throw new Error('Failed to load satellites');
+  }
+  return response.json();
 }

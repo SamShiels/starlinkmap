@@ -97,10 +97,13 @@ export class Mapper {
   }
 
   private _loadSatellites() {
-    fetchSatellitesFromApi()
+    fetchSatellitesFromApi(undefined, (partial) => {
+      this._satelliteRenderer.setSatellites(partial);
+      this._options.onSatellitesLoaded?.(partial);
+    })
       .then((loaded) => {
-        this._satelliteRenderer.setSatellites(loaded);
-        this._options.onSatellitesLoaded?.(loaded);
+      this._satelliteRenderer.setSatellites(loaded);
+      this._options.onSatellitesLoaded?.(loaded);
       })
       .catch((err) => {
         const message = err instanceof Error ? err.message : 'Failed to load satellites';
