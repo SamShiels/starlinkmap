@@ -12,19 +12,35 @@ function App() {
   const [selectedSatellite, setSelectedSatellite] = useState<Satellite | null>(null);
   const [satellites, setSatellites] = useState<Satellite[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!canvasRef.current || !overlayRef.current) return;
     const initEngine = async () => {
-      const engine = await createEngine(canvasRef.current!, {
-        overlayCanvas: overlayRef.current!,
-        onHoverChange: setHoveredName,
-        onSelectChange: setSelectedSatellite,
-      });
-      engine.start();
-      setEngine(engine);
-      setSatellites(engine.getSatellites());
-      setEngineCleanup(() => engine.destroy);
+      try {
+        const engine = await createEngine(canvasRef.current!, {
+          overlayCanvas: overlayRef.current!,
+          onHoverChange: setHoveredName,
+          onSelectChange: setSelectedSatellite,
+          onSatellitesLoaded: (loaded) => {
+            setSatellites([...loaded]);
+            setLoading(false);
+            setLoadError(null);
+          },
+          onSatellitesError: (message) => {
+            setLoadError(message);
+            setLoading(false);
+          },
+        });
+        engine.start();
+        setEngine(engine);
+        setEngineCleanup(() => engine.destroy);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to load satellites';
+        setLoadError(message);
+        setLoading(false);
+      }
     };
     initEngine();
   }, []);
@@ -120,6 +136,19 @@ function App() {
               </div>
             </div>
           )}
+        </div>
+      )}
+      {loading && (
+        <div className="loading-bar" aria-live="polite" aria-label="Loading satellites">
+          <div className="loading-bar__track">
+            <div className="loading-bar__fill" />
+          </div>
+          <div className="loading-bar__text">Fetching satellites…</div>
+        </div>
+      )}
+      {!loading && loadError && (
+        <div className="loading-bar loading-bar--error" role="alert">
+          <div className="loading-bar__text">Failed to load: {loadError}</div>
         </div>
       )}
     </main>

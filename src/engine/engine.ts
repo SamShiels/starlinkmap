@@ -1,30 +1,55 @@
 import { setSizedCanvas } from './canvas';
 import { CameraControls } from './cameraControls';
 import { SceneRenderer } from './sceneRenderer';
-import { Satellite } from './satellite';
 import { getGLContext } from './helpers/context';
 import { makeLookAtMatrix, makePerspectiveMatrix } from './helpers/matrices';
+import { Satellite } from './satellite';
+import { SatelliteRenderer } from './satelliteRenderer';
 
-type SatelliteData = {
+type SatelliteApiData = {
   id: number;
   name: string;
   orbital_radius_km: number;
   angular_velocity_rad_per_s: number;
-  altitude_km: number;
   speed_kms: number;
-  direction: { x: number; y: number; z: number };
   position: { x: number; y: number; z: number };
   velocity: { vx: number; vy: number; vz: number };
 };
 
-async function fetchSatellites(): Promise<SatelliteData[]> {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000';
+const DEFAULT_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000';
+const POSITION_SCALE = 0.00011;
+
+async function fetchSatellitesFromApi(baseUrl: string = DEFAULT_BASE_URL): Promise<Satellite[]> {
   const response = await fetch(`${baseUrl}/satellites`);
   if (!response.ok) {
-    throw new Error('Failed to fetch satellites');
+    throw new Error('Failed to load satellites');
   }
   const data = await response.json();
-  return data.satellites;
+  return mapApiDataToSatellites(data.satellites);
+}
+
+function mapApiDataToSatellites(data: SatelliteApiData[]): Satellite[] {
+  return data.map((entry) => {
+    const position = {
+      x: entry.position.x * POSITION_SCALE,
+      y: entry.position.y * POSITION_SCALE,
+      z: entry.position.z * POSITION_SCALE,
+    };
+    const velocity = {
+      x: entry.velocity.vx * POSITION_SCALE,
+      y: entry.velocity.vy * POSITION_SCALE,
+      z: entry.velocity.vz * POSITION_SCALE,
+    };
+
+    return new Satellite(
+      entry.id,
+      entry.name,
+      position,
+      velocity,
+      entry.angular_velocity_rad_per_s,
+      { altitudeKm: entry.orbital_radius_km, speedKms: entry.speed_kms },
+    );
+  });
 }
 
 export type Engine = {
@@ -41,6 +66,8 @@ type EngineOptions = {
   onHoverChange?: (name: string | null) => void;
   onSelectChange?: (satellite: Satellite | null) => void;
   overlayCanvas?: HTMLCanvasElement;
+  onSatellitesLoaded?: (satellites: Satellite[]) => void;
+  onSatellitesError?: (message: string) => void;
 };
 
 export async function createEngine(
@@ -52,39 +79,29 @@ export async function createEngine(
   gl.enable(gl.DEPTH_TEST);
   // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
-  // Fetch real satellite data
-  const satelliteData = await fetchSatellites();
-  const satellites: Satellite[] = satelliteData.map(data => {
-    // Scale positions and velocities for visualization (km to some unit)
-    const scale = 0.00011; // e.g., 1 unit = 1 km
-    const position = {
-      x: data.position.x * scale,
-      y: data.position.y * scale,
-      z: data.position.z * scale,
-    };
-    const velocity = {
-      x: data.velocity.vx * scale,
-      y: data.velocity.vy * scale,
-      z: data.velocity.vz * scale,
-    };
-    return new Satellite(
-      data.id,
-      data.name,
-      position,
-      velocity,
-      data.angular_velocity_rad_per_s,
-      { altitudeKm: data.orbital_radius_km, speedKms: data.speed_kms },
-    );
-  });
+  // Create renderer; satellites load asynchronously so earth can render immediately
+  const satelliteRenderer = new SatelliteRenderer(gl);
+  const satellites = satelliteRenderer.getSatellites();
 
   const overlayCtx = options.overlayCanvas?.getContext('2d') ?? null;
   const sceneRenderer = new SceneRenderer(
     gl,
-    satellites,
+    satelliteRenderer,
     options.onHoverChange,
     overlayCtx,
     options.onSelectChange,
   );
+
+  // Kick off satellite fetch in background; update listeners when ready
+  fetchSatellitesFromApi()
+    .then((loaded) => {
+      satelliteRenderer.setSatellites(loaded);
+      options.onSatellitesLoaded?.(loaded);
+    })
+    .catch((err) => {
+      const message = err instanceof Error ? err.message : 'Failed to load satellites';
+      options.onSatellitesError?.(message);
+    });
 
   let rafId: number | null = null;
   let destroyed = false;

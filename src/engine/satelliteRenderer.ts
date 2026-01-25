@@ -75,24 +75,18 @@ export class SatelliteRenderer {
   private readonly quadSize = 0.0014;
   private readonly selectedScale = 1.7;
   private readonly hoverScale = 1.5;
+  private satellites: Satellite[];
 
-  constructor(gl: WebGL2RenderingContext, satellites: Satellite[]) {
+  constructor(gl: WebGL2RenderingContext) {
     this.gl = gl;
+    this.satellites = [];
 
     // Create program
     this.program = new Program(gl, POINT_VERTEX_SHADER, POINT_FRAGMENT_SHADER);
 
-    // Create buffers: 4 verts per satellite, 6 indices per satellite
-    this.vertexBuffer = new GLBuffer(
-      gl,
-      new Float32Array(Math.max(1, satellites.length) * 4 * 7),
-      { target: 'vertex', usage: gl.DYNAMIC_DRAW },
-    );
-    this.indexBuffer = new GLBuffer(
-      gl,
-      new Uint32Array(Math.max(1, satellites.length) * 6),
-      { target: 'index', usage: gl.DYNAMIC_DRAW },
-    );
+    // Create minimal buffers; resize when data arrives
+    this.vertexBuffer = new GLBuffer(gl, new Float32Array(4 * 7), { target: 'vertex', usage: gl.DYNAMIC_DRAW });
+    this.indexBuffer = new GLBuffer(gl, new Uint32Array(6), { target: 'index', usage: gl.DYNAMIC_DRAW });
 
     const centerLoc = gl.getAttribLocation(this.program.handle, 'aCenter');
     const cornerLoc = gl.getAttribLocation(this.program.handle, 'aCorner');
@@ -117,20 +111,62 @@ export class SatelliteRenderer {
     this.hoverScaleLocation = this.program.getUniformLocation('uHoverScale');
   }
 
+  setSatellites(next: Satellite[]) {
+    this.satellites.length = 0;
+    this.satellites.push(...next);
+    this.recreateBuffers();
+  }
+
+  private recreateBuffers() {
+    const count = Math.max(1, this.satellites.length);
+    this.vao.destroy();
+    this.vertexBuffer.destroy();
+    this.indexBuffer.destroy();
+
+    this.vertexBuffer = new GLBuffer(
+      this.gl,
+      new Float32Array(count * 4 * 7),
+      { target: 'vertex', usage: this.gl.DYNAMIC_DRAW },
+    );
+    this.indexBuffer = new GLBuffer(
+      this.gl,
+      new Uint32Array(count * 6),
+      { target: 'index', usage: this.gl.DYNAMIC_DRAW },
+    );
+
+    const centerLoc = this.gl.getAttribLocation(this.program.handle, 'aCenter');
+    const cornerLoc = this.gl.getAttribLocation(this.program.handle, 'aCorner');
+    const selectedLoc = this.gl.getAttribLocation(this.program.handle, 'aIsSelected');
+    const hoveredLoc = this.gl.getAttribLocation(this.program.handle, 'aIsHovered');
+
+    this.vao = new VertexArray(this.gl, (builder) => {
+      this.gl.bindBuffer(this.vertexBuffer.targetEnum, this.vertexBuffer.handle);
+      const stride = 7 * Float32Array.BYTES_PER_ELEMENT;
+      builder.addPointer({ location: centerLoc, size: 3, stride });
+      builder.addPointer({ location: cornerLoc, size: 2, stride });
+      builder.addPointer({ location: selectedLoc, size: 1, stride });
+      builder.addPointer({ location: hoveredLoc, size: 1, stride });
+      this.gl.bindBuffer(this.indexBuffer.targetEnum, this.indexBuffer.handle);
+    });
+  }
+
+  getSatellites(): Satellite[] {
+    return this.satellites;
+  }
+
   render(
     viewMatrix: Float32Array,
     projectionMatrix: Float32Array,
-    satellites: Satellite[],
     selectedId: number | null,
     hoveredId: number | null,
   ) {
-    if (satellites.length === 0) return;
+    if (this.satellites.length === 0) return;
 
     // Build per-vertex data: center position + corner indicator
-    const data = new Float32Array(satellites.length * 4 * 7);
-    const indices = new Uint32Array(satellites.length * 6);
-    for (let i = 0; i < satellites.length; i++) {
-      const sat = satellites[i];
+    const data = new Float32Array(this.satellites.length * 4 * 7);
+    const indices = new Uint32Array(this.satellites.length * 6);
+    for (let i = 0; i < this.satellites.length; i++) {
+      const sat = this.satellites[i];
       const base = i * 28; // 4 verts * 7 floats
       const isSelected = selectedId !== null && sat.id === selectedId ? 1 : 0;
       const isHovered = hoveredId !== null && sat.id === hoveredId ? 1 : 0;
@@ -171,7 +207,7 @@ export class SatelliteRenderer {
     this.gl.uniform1f(this.sizeLocation, this.quadSize * 0.5);
     this.gl.uniform1f(this.selectedScaleLocation, this.selectedScale);
     this.gl.uniform1f(this.hoverScaleLocation, this.hoverScale);
-    this.gl.drawElements(this.gl.TRIANGLES, satellites.length * 6, this.gl.UNSIGNED_INT, 0);
+    this.gl.drawElements(this.gl.TRIANGLES, this.satellites.length * 6, this.gl.UNSIGNED_INT, 0);
 
     this.vao.unbind();
   }

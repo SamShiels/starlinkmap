@@ -224,6 +224,63 @@ h1 {
   letter-spacing: 0.01em;
 }
 
+.loading-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 1.25rem;
+  transform: translateX(-50%);
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  background: rgba(8, 10, 18, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  min-width: 240px;
+  z-index: 3;
+}
+
+.loading-bar__track {
+  position: relative;
+  height: 6px;
+  width: 100%;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.loading-bar__fill {
+  position: absolute;
+  inset: 0;
+  width: 45%;
+  background: linear-gradient(90deg, #7da0ff, #a0c8ff);
+  border-radius: 999px;
+  animation: loading-slide 1.2s ease-in-out infinite;
+}
+
+.loading-bar__text {
+  margin-top: 0.45rem;
+  font-size: 0.9rem;
+  color: #dce6ff;
+  text-align: center;
+}
+
+.loading-bar--error {
+  border-color: rgba(255, 113, 113, 0.4);
+  background: rgba(26, 12, 12, 0.9);
+  color: #ffdede;
+}
+
+@keyframes loading-slide {
+  0% {
+    transform: translateX(-120%);
+  }
+  50% {
+    transform: translateX(10%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
 @media (max-width: 720px) {
   .scene {
     padding: 1.5rem;

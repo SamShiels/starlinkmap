@@ -25,15 +25,15 @@ export class SceneRenderer {
 
   constructor(
     gl: WebGL2RenderingContext,
-    satellites: Satellite[],
+    satelliteRenderer: SatelliteRenderer,
     onHoverChange?: (name: string | null) => void,
     overlayCtx?: CanvasRenderingContext2D | null,
     onSelectChange?: (satellite: Satellite | null) => void,
   ) {
     this.gl = gl;
-    this.satellites = satellites;
+    this.satelliteRenderer = satelliteRenderer;
+    this.satellites = satelliteRenderer.getSatellites();
     this.earthRenderer = new EarthRenderer(gl);
-    this.satelliteRenderer = new SatelliteRenderer(gl, satellites);
     this.orbitRenderer = new OrbitRenderer(gl);
     this.overlayLabels = overlayCtx ? new OverlayLabels(overlayCtx) : null;
     this.onHoverChange = onHoverChange;
@@ -77,7 +77,6 @@ export class SceneRenderer {
     this.satelliteRenderer.render(
       viewMatrix,
       projectionMatrix,
-      this.satellites,
       this.selectedSatelliteId,
       this.hoveredId,
     );
