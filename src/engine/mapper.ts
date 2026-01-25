@@ -17,134 +17,134 @@ export type MapperOptions = {
 
 export class Mapper {
   public readonly gl: WebGL2RenderingContext;
-  private readonly options: MapperOptions;
-  private readonly satelliteRenderer: SatelliteRenderer;
-  private readonly sceneRenderer: SceneRenderer;
-  private readonly controls: CameraControls;
-  private readonly canvasEl: HTMLCanvasElement;
-  private readonly viewMatrix = new Float32Array(16);
-  private readonly projectionMatrix = new Float32Array(16);
-  private rafId: number | null = null;
-  private destroyed = false;
-  private preventScroll = (event: WheelEvent) => {
+  private readonly _options: MapperOptions;
+  private readonly _satelliteRenderer: SatelliteRenderer;
+  private readonly _sceneRenderer: SceneRenderer;
+  private readonly _controls: CameraControls;
+  private readonly _canvasEl: HTMLCanvasElement;
+  private readonly _viewMatrix = new Float32Array(16);
+  private readonly _projectionMatrix = new Float32Array(16);
+  private _rafId: number | null = null;
+  private _destroyed = false;
+  private _preventScroll = (event: WheelEvent) => {
     event.preventDefault();
   };
 
   constructor(canvas: HTMLCanvasElement, options: MapperOptions = {}) {
-    this.options = options;
+    this._options = options;
     this.gl = getGLContext(canvas);
     this.gl.clearColor(0.01, 0.01, 0.1, 1.0);
     this.gl.enable(this.gl.DEPTH_TEST);
 
-    this.satelliteRenderer = new SatelliteRenderer(this.gl);
+    this._satelliteRenderer = new SatelliteRenderer(this.gl);
     const overlayCtx = options.overlayCanvas?.getContext('2d') ?? null;
-    this.sceneRenderer = new SceneRenderer(
+    this._sceneRenderer = new SceneRenderer(
       this.gl,
-      this.satelliteRenderer,
+      this._satelliteRenderer,
       options.onHoverChange,
       overlayCtx,
       options.onSelectChange,
     );
 
-    this.controls = new CameraControls(canvas);
-    this.canvasEl = this.gl.canvas as HTMLCanvasElement;
+    this._controls = new CameraControls(canvas);
+    this._canvasEl = this.gl.canvas as HTMLCanvasElement;
 
-    this.canvasEl.addEventListener('mousemove', this.handleMouseMove);
-    this.canvasEl.addEventListener('mouseleave', this.handleMouseLeave);
-    this.canvasEl.addEventListener('mouseup', this.handleClick);
-    document.addEventListener('wheel', this.preventScroll, { passive: false });
+    this._canvasEl.addEventListener('mousemove', this._handleMouseMove);
+    this._canvasEl.addEventListener('mouseleave', this._handleMouseLeave);
+    this._canvasEl.addEventListener('mouseup', this._handleClick);
+    document.addEventListener('wheel', this._preventScroll, { passive: false });
 
-    this.loadSatellites();
+    this._loadSatellites();
   }
 
-  start() {
-    if (this.destroyed || this.rafId !== null) {
+  public start() {
+    if (this._destroyed || this._rafId !== null) {
       return;
     }
-    this.rafId = window.requestAnimationFrame(this.render);
+    this._rafId = window.requestAnimationFrame(this._render);
   }
 
-  stop() {
-    if (this.rafId !== null) {
-      window.cancelAnimationFrame(this.rafId);
-      this.rafId = null;
+  public stop() {
+    if (this._rafId !== null) {
+      window.cancelAnimationFrame(this._rafId);
+      this._rafId = null;
     }
   }
 
-  destroy() {
-    if (this.destroyed) {
+  public destroy() {
+    if (this._destroyed) {
       return;
     }
     this.stop();
-    this.canvasEl.removeEventListener('mousemove', this.handleMouseMove);
-    this.canvasEl.removeEventListener('mouseleave', this.handleMouseLeave);
-    this.canvasEl.removeEventListener('mouseup', this.handleClick);
-    document.removeEventListener('wheel', this.preventScroll);
-    this.sceneRenderer.destroy();
-    this.destroyed = true;
+    this._canvasEl.removeEventListener('mousemove', this._handleMouseMove);
+    this._canvasEl.removeEventListener('mouseleave', this._handleMouseLeave);
+    this._canvasEl.removeEventListener('mouseup', this._handleClick);
+    document.removeEventListener('wheel', this._preventScroll);
+    this._sceneRenderer.destroy();
+    this._destroyed = true;
   }
 
-  selectSatellite(id: number | null) {
-    this.sceneRenderer.setSelectedSatellite(id);
+  public selectSatellite(id: number | null) {
+    this._sceneRenderer.setSelectedSatellite(id);
   }
 
-  setOverlayContext(ctx: CanvasRenderingContext2D | null) {
-    this.sceneRenderer.setOverlayContext(ctx);
+  public setOverlayContext(ctx: CanvasRenderingContext2D | null) {
+    this._sceneRenderer.setOverlayContext(ctx);
   }
 
-  getSatellites(): Satellite[] {
-    return this.satelliteRenderer.getSatellites();
+  public getSatellites(): Satellite[] {
+    return this._satelliteRenderer.getSatellites();
   }
 
-  private loadSatellites() {
+  private _loadSatellites() {
     fetchSatellitesFromApi()
       .then((loaded) => {
-        this.satelliteRenderer.setSatellites(loaded);
-        this.options.onSatellitesLoaded?.(loaded);
+        this._satelliteRenderer.setSatellites(loaded);
+        this._options.onSatellitesLoaded?.(loaded);
       })
       .catch((err) => {
         const message = err instanceof Error ? err.message : 'Failed to load satellites';
-        this.options.onSatellitesError?.(message);
+        this._options.onSatellitesError?.(message);
       });
   }
 
-  private setPointerFromEvent = (event: MouseEvent) => {
-    const rect = this.canvasEl.getBoundingClientRect();
+  private _setPointerFromEvent = (event: MouseEvent) => {
+    const rect = this._canvasEl.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     const x = (event.clientX - rect.left) * dpr;
     const y = (event.clientY - rect.top) * dpr;
-    this.sceneRenderer.setPointer({ x, y });
+    this._sceneRenderer.setPointer({ x, y });
   };
 
-  private handleMouseMove = (event: MouseEvent) => {
-    this.setPointerFromEvent(event);
+  private _handleMouseMove = (event: MouseEvent) => {
+    this._setPointerFromEvent(event);
   };
 
-  private handleMouseLeave = () => {
-    this.sceneRenderer.setPointer(null);
+  private _handleMouseLeave = () => {
+    this._sceneRenderer.setPointer(null);
   };
 
-  private handleClick = (event: MouseEvent) => {
-    this.setPointerFromEvent(event);
-    if (!this.controls.isDragging) {
-      this.sceneRenderer.selectHoveredSatellite();
+  private _handleClick = (event: MouseEvent) => {
+    this._setPointerFromEvent(event);
+    if (!this._controls.isDragging) {
+      this._sceneRenderer.selectHoveredSatellite();
     }
   };
 
-  private render = (timeMs: number) => {
+  private _render = (timeMs: number) => {
     setSizedCanvas(this.gl);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
     const aspect = this.gl.canvas.width / this.gl.canvas.height;
-    makePerspectiveMatrix(this.projectionMatrix, (60 * Math.PI) / 180, aspect, 0.1, 100);
+    makePerspectiveMatrix(this._projectionMatrix, (60 * Math.PI) / 180, aspect, 0.1, 100);
 
-    this.controls.update();
+    this._controls.update();
 
-    const eye = this.controls.getEyePosition();
+    const eye = this._controls.getEyePosition();
     const target = { x: 0, y: 0, z: 0 };
-    makeLookAtMatrix(this.viewMatrix, eye, target);
+    makeLookAtMatrix(this._viewMatrix, eye, target);
 
-    this.sceneRenderer.render(this.viewMatrix, this.projectionMatrix, timeMs, eye);
-    this.rafId = window.requestAnimationFrame(this.render);
+    this._sceneRenderer.render(this._viewMatrix, this._projectionMatrix, timeMs, eye);
+    this._rafId = window.requestAnimationFrame(this._render);
   };
 }

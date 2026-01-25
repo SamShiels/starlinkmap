@@ -45,54 +45,54 @@ void main() {
 `;
 
 export class EarthRenderer {
-  private gl: WebGL2RenderingContext;
-  private program: Program;
-  private dayTexture: GLTexture2D;
-  private nightTexture: GLTexture2D;
-  private vao: VertexArray;
-  private geo: SphereGeometry;
-  private viewLocation: WebGLUniformLocation | null;
-  private projectionLocation: WebGLUniformLocation | null;
-  private dayTextureLocation: WebGLUniformLocation | null;
-  private nightTextureLocation: WebGLUniformLocation | null;
-  private sunDirectionLocation: WebGLUniformLocation | null;
+  private _gl: WebGL2RenderingContext;
+  private _program: Program;
+  private _dayTexture: GLTexture2D;
+  private _nightTexture: GLTexture2D;
+  private _vao: VertexArray;
+  private _geo: SphereGeometry;
+  private _viewLocation: WebGLUniformLocation | null;
+  private _projectionLocation: WebGLUniformLocation | null;
+  private _dayTextureLocation: WebGLUniformLocation | null;
+  private _nightTextureLocation: WebGLUniformLocation | null;
+  private _sunDirectionLocation: WebGLUniformLocation | null;
 
   constructor(gl: WebGL2RenderingContext) {
-    this.gl = gl;
+    this._gl = gl;
 
     // Create program
-    this.program = new Program(gl, VERTEX_SHADER, FRAGMENT_SHADER);
+    this._program = new Program(gl, VERTEX_SHADER, FRAGMENT_SHADER);
 
     // Load day texture
-    this.dayTexture = new GLTexture2D(gl, { wrapS: gl.REPEAT, wrapT: gl.CLAMP_TO_EDGE });
+    this._dayTexture = new GLTexture2D(gl, { wrapS: gl.REPEAT, wrapT: gl.CLAMP_TO_EDGE });
     const dayImg = new Image();
     dayImg.onload = () => {
-      this.dayTexture.uploadFromImage(dayImg);
+      this._dayTexture.uploadFromImage(dayImg);
     };
     dayImg.src = '/8k_earth_daymap.jpg';
 
     // Load night texture
-    this.nightTexture = new GLTexture2D(gl, { wrapS: gl.REPEAT, wrapT: gl.CLAMP_TO_EDGE });
+    this._nightTexture = new GLTexture2D(gl, { wrapS: gl.REPEAT, wrapT: gl.CLAMP_TO_EDGE });
     const nightImg = new Image();
     nightImg.onload = () => {
-      this.nightTexture.uploadFromImage(nightImg);
+      this._nightTexture.uploadFromImage(nightImg);
     };
     nightImg.src = '/8k_earth_nightmap.jpg';
 
     // Create geometry
-    this.geo = QuadSphereGenerator.create(0.7, 64);
+    this._geo = QuadSphereGenerator.create(0.7, 64);
 
     // Create buffers
-    const vertexBuffer = new GLBuffer(gl, new Float32Array(this.geo.vertices), { target: 'vertex' });
-    const indexBuffer = new GLBuffer(gl, new Int16Array(this.geo.indices), { target: 'index' });
+    const vertexBuffer = new GLBuffer(gl, new Float32Array(this._geo.vertices), { target: 'vertex' });
+    const indexBuffer = new GLBuffer(gl, new Int16Array(this._geo.indices), { target: 'index' });
 
     const stride = 8 * Float32Array.BYTES_PER_ELEMENT;
 
-    const positionLoc = gl.getAttribLocation(this.program.handle, 'aPosition');
-    const uvLoc = gl.getAttribLocation(this.program.handle, 'aUv');
-    const normalLoc = gl.getAttribLocation(this.program.handle, 'aNormal');
+    const positionLoc = gl.getAttribLocation(this._program.handle, 'aPosition');
+    const uvLoc = gl.getAttribLocation(this._program.handle, 'aUv');
+    const normalLoc = gl.getAttribLocation(this._program.handle, 'aNormal');
 
-    this.vao = new VertexArray(gl, (builder) => {
+    this._vao = new VertexArray(gl, (builder) => {
       gl.bindBuffer(vertexBuffer.targetEnum, vertexBuffer.handle);
       builder.addPointer({ location: positionLoc, size: 3, stride});
       builder.addPointer({ location: uvLoc, size: 2, stride });
@@ -102,43 +102,43 @@ export class EarthRenderer {
     });
 
     // Get uniform locations
-    this.viewLocation = this.program.getUniformLocation('uView');
-    this.projectionLocation = this.program.getUniformLocation('uProjection');
-    this.dayTextureLocation = this.program.getUniformLocation('uDayTexture');
-    this.nightTextureLocation = this.program.getUniformLocation('uNightTexture');
-    this.sunDirectionLocation = this.program.getUniformLocation('uSunDirection');
+    this._viewLocation = this._program.getUniformLocation('uView');
+    this._projectionLocation = this._program.getUniformLocation('uProjection');
+    this._dayTextureLocation = this._program.getUniformLocation('uDayTexture');
+    this._nightTextureLocation = this._program.getUniformLocation('uNightTexture');
+    this._sunDirectionLocation = this._program.getUniformLocation('uSunDirection');
   }
 
-  render(viewMatrix: Float32Array, projectionMatrix: Float32Array) {
-    this.program.use();
-    this.vao.bind();
+  public render(viewMatrix: Float32Array, projectionMatrix: Float32Array) {
+    this._program.use();
+    this._vao.bind();
 
-    this.gl.uniformMatrix4fv(this.viewLocation, false, viewMatrix);
-    this.gl.uniformMatrix4fv(this.projectionLocation, false, projectionMatrix);
+    this._gl.uniformMatrix4fv(this._viewLocation, false, viewMatrix);
+    this._gl.uniformMatrix4fv(this._projectionLocation, false, projectionMatrix);
 
-    this.dayTexture.bind(0);
-    this.gl.uniform1i(this.dayTextureLocation, 0);
-    this.nightTexture.bind(1);
-    this.gl.uniform1i(this.nightTextureLocation, 1);
+    this._dayTexture.bind(0);
+    this._gl.uniform1i(this._dayTextureLocation, 0);
+    this._nightTexture.bind(1);
+    this._gl.uniform1i(this._nightTextureLocation, 1);
 
-    const sunDirection = this.getSunDirection();
-    this.gl.uniform3f(this.sunDirectionLocation, sunDirection[0], sunDirection[1], sunDirection[2]);
+    const sunDirection = this._getSunDirection();
+    this._gl.uniform3f(this._sunDirectionLocation, sunDirection[0], sunDirection[1], sunDirection[2]);
 
-    this.gl.drawElements(this.gl.TRIANGLES, this.geo.indexCount, this.gl.UNSIGNED_SHORT, 0);
+    this._gl.drawElements(this._gl.TRIANGLES, this._geo.indexCount, this._gl.UNSIGNED_SHORT, 0);
 
-    this.vao.unbind();
-    this.dayTexture.unbind(0);
-    this.nightTexture.unbind(1);
+    this._vao.unbind();
+    this._dayTexture.unbind(0);
+    this._nightTexture.unbind(1);
   }
 
-  destroy() {
-    this.vao.destroy();
-    this.dayTexture.destroy();
-    this.nightTexture.destroy();
-    this.program.destroy();
+  public destroy() {
+    this._vao.destroy();
+    this._dayTexture.destroy();
+    this._nightTexture.destroy();
+    this._program.destroy();
   }
 
-  private getSunDirection(): [number, number, number] {
+  private _getSunDirection(): [number, number, number] {
     const now = new Date();
     const millisecondsInADay = 86400000;
 

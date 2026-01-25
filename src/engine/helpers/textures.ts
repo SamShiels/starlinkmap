@@ -16,8 +16,8 @@ type TextureDataOptions = {
 };
 
 export class GLTexture2D {
-  private gl: WebGL2RenderingContext;
-  private texture: WebGLTexture | null;
+  private _gl: WebGL2RenderingContext;
+  private _texture: WebGLTexture | null;
 
   public width: number = 0;
   public height: number = 0;
@@ -26,12 +26,12 @@ export class GLTexture2D {
     gl: WebGL2RenderingContext,
     { wrapS, wrapT, minFilter, magFilter }: TextureOptions = {},
   ) {
-    this.gl = gl;
+    this._gl = gl;
     const tex = gl.createTexture();
     if (!tex) {
       throw new Error('Failed to create texture');
     }
-    this.texture = tex;
+    this._texture = tex;
     this.bind();
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapS ?? gl.CLAMP_TO_EDGE);
@@ -42,25 +42,25 @@ export class GLTexture2D {
     this.unbind();
   }
 
-  get handle(): WebGLTexture {
-    if (!this.texture) {
+  public get handle(): WebGLTexture {
+    if (!this._texture) {
       throw new Error('Texture has been destroyed');
     }
-    return this.texture;
+    return this._texture;
   }
 
-  bind(unit: number = 0): void {
-    this.gl.activeTexture(this.gl.TEXTURE0 + unit);
-    this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture);
+  public bind(unit: number = 0): void {
+    this._gl.activeTexture(this._gl.TEXTURE0 + unit);
+    this._gl.bindTexture(this._gl.TEXTURE_2D, this._texture);
   }
 
-  unbind(unit: number = 0): void {
-    this.gl.activeTexture(this.gl.TEXTURE0 + unit);
-    this.gl.bindTexture(this.gl.TEXTURE_2D, null);
+  public unbind(unit: number = 0): void {
+    this._gl.activeTexture(this._gl.TEXTURE0 + unit);
+    this._gl.bindTexture(this._gl.TEXTURE_2D, null);
   }
 
-  uploadFromImage(image: TexImageSource & { width?: number; height?: number }): void {
-    const gl = this.gl;
+  public uploadFromImage(image: TexImageSource & { width?: number; height?: number }): void {
+    const gl = this._gl;
     this.width = image.width ?? 0;
     this.height = image.height ?? 0;
     this.bind();
@@ -68,8 +68,8 @@ export class GLTexture2D {
     this.unbind();
   }
 
-  uploadData({ width, height, format, type, data }: TextureDataOptions): void {
-    const gl = this.gl;
+  public uploadData({ width, height, format, type, data }: TextureDataOptions): void {
+    const gl = this._gl;
     this.width = width;
     this.height = height;
     this.bind();
@@ -87,11 +87,11 @@ export class GLTexture2D {
     this.unbind();
   }
 
-  destroy(): void {
-    if (!this.texture) {
+  public destroy(): void {
+    if (!this._texture) {
       return;
     }
-    this.gl.deleteTexture(this.texture);
-    this.texture = null;
+    this._gl.deleteTexture(this._texture);
+    this._texture = null;
   }
 }

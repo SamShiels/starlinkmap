@@ -63,11 +63,11 @@ function compileShader(gl: WebGL2RenderingContext, type: number, source: string)
 }
 
 export class Program {
-  private gl: WebGL2RenderingContext;
-  private program: WebGLProgram;
+  private _gl: WebGL2RenderingContext;
+  private _program: WebGLProgram | null;
 
   constructor(gl: WebGL2RenderingContext, vertexSource: string, fragmentSource: string) {
-    this.gl = gl;
+    this._gl = gl;
     const program = gl.createProgram();
     if (!program) {
       throw new Error('Failed to create program');
@@ -89,25 +89,32 @@ export class Program {
       throw new Error(`Program link error: ${info ?? 'unknown'}`);
     }
 
-    this.program = program;
+    this._program = program;
   }
 
-  get handle(): WebGLProgram {
-    return this.program;
+  public get handle(): WebGLProgram {
+    if (!this._program) {
+      throw new Error('Program has been destroyed');
+    }
+    return this._program;
   }
 
-  use() {
-    this.gl.useProgram(this.program);
+  public use() {
+    if (!this._program) return;
+    this._gl.useProgram(this._program);
   }
 
-  getUniformLocation(name: string): WebGLUniformLocation | null {
-    return this.gl.getUniformLocation(this.program, name);
+  public getUniformLocation(name: string): WebGLUniformLocation | null {
+    if (!this._program) {
+      throw new Error('Program has been destroyed');
+    }
+    return this._gl.getUniformLocation(this._program, name);
   }
 
-  destroy() {
-    if (this.program) {
-      this.gl.deleteProgram(this.program);
-      this.program = null;
+  public destroy() {
+    if (this._program) {
+      this._gl.deleteProgram(this._program);
+      this._program = null;
     }
   }
 }

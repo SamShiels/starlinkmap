@@ -21,37 +21,37 @@ void main() {
 `;
 
 export class OrbitRenderer {
-  private gl: WebGL2RenderingContext;
-  private program: Program;
-  private vao: VertexArray;
-  private buffer: GLBuffer;
-  private vertexCount = 0;
-  private viewLocation: WebGLUniformLocation | null;
-  private projectionLocation: WebGLUniformLocation | null;
-  private colorLocation: WebGLUniformLocation | null;
+  private _gl: WebGL2RenderingContext;
+  private _program: Program;
+  private _vao: VertexArray;
+  private _buffer: GLBuffer;
+  private _vertexCount = 0;
+  private _viewLocation: WebGLUniformLocation | null;
+  private _projectionLocation: WebGLUniformLocation | null;
+  private _colorLocation: WebGLUniformLocation | null;
 
   constructor(gl: WebGL2RenderingContext) {
-    this.gl = gl;
-    this.program = new Program(gl, ORBIT_VERTEX_SHADER, ORBIT_FRAGMENT_SHADER);
+    this._gl = gl;
+    this._program = new Program(gl, ORBIT_VERTEX_SHADER, ORBIT_FRAGMENT_SHADER);
 
     // Buffer holds pairs of vertices per orbit segment
-    this.buffer = new GLBuffer(gl, new Float32Array(0), { target: 'vertex', usage: gl.DYNAMIC_DRAW });
+    this._buffer = new GLBuffer(gl, new Float32Array(0), { target: 'vertex', usage: gl.DYNAMIC_DRAW });
 
-    const positionLoc = gl.getAttribLocation(this.program.handle, 'aPosition');
+    const positionLoc = gl.getAttribLocation(this._program.handle, 'aPosition');
 
-    this.vao = new VertexArray(gl, (builder) => {
-      gl.bindBuffer(this.buffer.targetEnum, this.buffer.handle);
+    this._vao = new VertexArray(gl, (builder) => {
+      gl.bindBuffer(this._buffer.targetEnum, this._buffer.handle);
       builder.addPointer({ location: positionLoc, size: 3, stride: 3 * Float32Array.BYTES_PER_ELEMENT });
     });
 
-    this.viewLocation = this.program.getUniformLocation('uView');
-    this.projectionLocation = this.program.getUniformLocation('uProjection');
-    this.colorLocation = this.program.getUniformLocation('uColor');
+    this._viewLocation = this._program.getUniformLocation('uView');
+    this._projectionLocation = this._program.getUniformLocation('uProjection');
+    this._colorLocation = this._program.getUniformLocation('uColor');
   }
 
-  setPath(points: { x: number; y: number; z: number }[]) {
+  public setPath(points: { x: number; y: number; z: number }[]) {
     if (!points.length) {
-      this.vertexCount = 0;
+      this._vertexCount = 0;
       return;
     }
 
@@ -70,34 +70,34 @@ export class OrbitRenderer {
       vertices[base + 5] = end.z;
     }
 
-    this.buffer.updateData(vertices);
-    this.vertexCount = segmentCount * 2;
+    this._buffer.updateData(vertices);
+    this._vertexCount = segmentCount * 2;
   }
 
-  clear() {
-    this.vertexCount = 0;
+  public clear() {
+    this._vertexCount = 0;
   }
 
-  render(viewMatrix: Float32Array, projectionMatrix: Float32Array) {
-    if (this.vertexCount === 0) return;
+  public render(viewMatrix: Float32Array, projectionMatrix: Float32Array) {
+    if (this._vertexCount === 0) return;
 
-    this.program.use();
-    this.vao.bind();
+    this._program.use();
+    this._vao.bind();
 
-    this.gl.uniformMatrix4fv(this.viewLocation, false, viewMatrix);
-    this.gl.uniformMatrix4fv(this.projectionLocation, false, projectionMatrix);
+    this._gl.uniformMatrix4fv(this._viewLocation, false, viewMatrix);
+    this._gl.uniformMatrix4fv(this._projectionLocation, false, projectionMatrix);
 
     // Soft cyan for orbit lines
-    this.gl.uniform3f(this.colorLocation, 0.3, 0.8, 1.0);
+    this._gl.uniform3f(this._colorLocation, 0.3, 0.8, 1.0);
 
-    this.gl.drawArrays(this.gl.LINES, 0, this.vertexCount);
+    this._gl.drawArrays(this._gl.LINES, 0, this._vertexCount);
 
-    this.vao.unbind();
+    this._vao.unbind();
   }
 
-  destroy() {
-    this.vao.destroy();
-    this.buffer.destroy();
-    this.program.destroy();
+  public destroy() {
+    this._vao.destroy();
+    this._buffer.destroy();
+    this._program.destroy();
   }
 }

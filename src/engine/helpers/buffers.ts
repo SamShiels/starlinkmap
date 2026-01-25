@@ -1,56 +1,59 @@
 type BufferTarget = 'vertex' | 'index';
 
 export class GLBuffer {
-  private gl: WebGL2RenderingContext;
-  private buffer: WebGLBuffer;
-  private target: number;
+  private _gl: WebGL2RenderingContext;
+  private _buffer: WebGLBuffer | null;
+  private _target: number;
 
   constructor(
     gl: WebGL2RenderingContext,
     data: BufferSource,
     { target = 'vertex', usage }: { target?: BufferTarget; usage?: number } = {},
   ) {
-    this.gl = gl;
-    this.target = target === 'index' ? gl.ELEMENT_ARRAY_BUFFER : gl.ARRAY_BUFFER;
+    this._gl = gl;
+    this._target = target === 'index' ? gl.ELEMENT_ARRAY_BUFFER : gl.ARRAY_BUFFER;
 
     const handle = gl.createBuffer();
     const bufferUsage = usage ?? gl.STATIC_DRAW;
     if (!handle) {
       throw new Error('Failed to create buffer');
     }
-    this.buffer = handle;
+    this._buffer = handle;
 
-    gl.bindBuffer(this.target, this.buffer);
-    gl.bufferData(this.target, data, bufferUsage);
-    gl.bindBuffer(this.target, null);
+    gl.bindBuffer(this._target, this._buffer);
+    gl.bufferData(this._target, data, bufferUsage);
+    gl.bindBuffer(this._target, null);
   }
 
-  get handle(): WebGLBuffer {
-    return this.buffer;
+  public get handle(): WebGLBuffer {
+    if (!this._buffer) {
+      throw new Error('Buffer has been destroyed');
+    }
+    return this._buffer;
   }
 
-  get targetEnum(): number {
-    return this.target;
+  public get targetEnum(): number {
+    return this._target;
   }
 
-  bind() {
-    this.gl.bindBuffer(this.target, this.buffer);
+  public bind() {
+    this._gl.bindBuffer(this._target, this._buffer);
   }
 
-  unbind() {
-    this.gl.bindBuffer(this.target, null);
+  public unbind() {
+    this._gl.bindBuffer(this._target, null);
   }
 
-  updateData(data: BufferSource) {
+  public updateData(data: BufferSource) {
     this.bind();
-    this.gl.bufferData(this.target, data, this.gl.DYNAMIC_DRAW);
+    this._gl.bufferData(this._target, data, this._gl.DYNAMIC_DRAW);
     this.unbind();
   }
 
-  destroy() {
-    if (this.buffer) {
-      this.gl.deleteBuffer(this.buffer);
-      this.buffer = null;
+  public destroy() {
+    if (this._buffer) {
+      this._gl.deleteBuffer(this._buffer);
+      this._buffer = null;
     }
   }
 }

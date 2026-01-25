@@ -6,22 +6,22 @@ import { OrbitRenderer } from './orbitRenderer';
 import { OverlayLabels } from './screen/overlayLabels';
 
 export class SceneRenderer {
-  private gl: WebGL2RenderingContext;
-  private earthRenderer: EarthRenderer;
-  private satelliteRenderer: SatelliteRenderer;
-  private orbitRenderer: OrbitRenderer;
-  private overlayLabels: OverlayLabels | null = null;
-  private satellites: Satellite[];
-  private lastTime = 0;
-  private pointer: { x: number; y: number } | null = null;
-  private hoveredId: number | null = null;
-  private selectedSatelliteId: number | null = null;
-  private viewProj = mat4.create();
-  private tempVec4 = vec4.create();
-  private onHoverChange?: (name: string | null) => void;
-  private onSelectChange?: (satellite: Satellite | null) => void;
-  private readonly earthRadius = 0.7;
-  private readonly orbitSegments = 128;
+  private _gl: WebGL2RenderingContext;
+  private _earthRenderer: EarthRenderer;
+  private _satelliteRenderer: SatelliteRenderer;
+  private _orbitRenderer: OrbitRenderer;
+  private _overlayLabels: OverlayLabels | null = null;
+  private _satellites: Satellite[];
+  private _lastTime = 0;
+  private _pointer: { x: number; y: number } | null = null;
+  private _hoveredId: number | null = null;
+  private _selectedSatelliteId: number | null = null;
+  private _viewProj = mat4.create();
+  private _tempVec4 = vec4.create();
+  private _onHoverChange?: (name: string | null) => void;
+  private _onSelectChange?: (satellite: Satellite | null) => void;
+  private readonly _earthRadius = 0.7;
+  private readonly _orbitSegments = 128;
 
   constructor(
     gl: WebGL2RenderingContext,
@@ -30,130 +30,130 @@ export class SceneRenderer {
     overlayCtx?: CanvasRenderingContext2D | null,
     onSelectChange?: (satellite: Satellite | null) => void,
   ) {
-    this.gl = gl;
-    this.satelliteRenderer = satelliteRenderer;
-    this.satellites = satelliteRenderer.getSatellites();
-    this.earthRenderer = new EarthRenderer(gl);
-    this.orbitRenderer = new OrbitRenderer(gl);
-    this.overlayLabels = overlayCtx ? new OverlayLabels(overlayCtx) : null;
-    this.onHoverChange = onHoverChange;
-    this.onSelectChange = onSelectChange;
+    this._gl = gl;
+    this._satelliteRenderer = satelliteRenderer;
+    this._satellites = satelliteRenderer.getSatellites();
+    this._earthRenderer = new EarthRenderer(gl);
+    this._orbitRenderer = new OrbitRenderer(gl);
+    this._overlayLabels = overlayCtx ? new OverlayLabels(overlayCtx) : null;
+    this._onHoverChange = onHoverChange;
+    this._onSelectChange = onSelectChange;
   }
 
-  setPointer(position: { x: number; y: number } | null) {
-    this.pointer = position;
+  public setPointer(position: { x: number; y: number } | null) {
+    this._pointer = position;
   }
 
-  setOverlayContext(ctx: CanvasRenderingContext2D | null) {
+  public setOverlayContext(ctx: CanvasRenderingContext2D | null) {
     if (!ctx) {
-      this.overlayLabels = null;
+      this._overlayLabels = null;
       return;
     }
-    if (this.overlayLabels) {
-      this.overlayLabels.setContext(ctx);
+    if (this._overlayLabels) {
+      this._overlayLabels.setContext(ctx);
     } else {
-      this.overlayLabels = new OverlayLabels(ctx);
+      this._overlayLabels = new OverlayLabels(ctx);
     }
   }
 
-  render(
+  public render(
     viewMatrix: Float32Array,
     projectionMatrix: Float32Array,
     currentTime: number,
     eye: { x: number; y: number; z: number },
   ) {
-    const dt = (currentTime - this.lastTime) / 1000; // seconds
-    this.lastTime = currentTime;
+    const dt = (currentTime - this._lastTime) / 1000; // seconds
+    this._lastTime = currentTime;
 
     // Update satellites
-    for (const sat of this.satellites) {
+    for (const sat of this._satellites) {
       sat.update(dt);
     }
 
     // Render Earth
-    this.earthRenderer.render(viewMatrix, projectionMatrix);
+    this._earthRenderer.render(viewMatrix, projectionMatrix);
 
     // Render satellites
-    this.satelliteRenderer.render(
+    this._satelliteRenderer.render(
       viewMatrix,
       projectionMatrix,
-      this.selectedSatelliteId,
-      this.hoveredId,
+      this._selectedSatelliteId,
+      this._hoveredId,
     );
 
     // Render selected orbit
-    this.orbitRenderer.render(viewMatrix, projectionMatrix);
+    this._orbitRenderer.render(viewMatrix, projectionMatrix);
 
-    this.overlayLabels?.render(viewMatrix, projectionMatrix, this.satellites, eye, this.selectedSatelliteId);
+    this._overlayLabels?.render(viewMatrix, projectionMatrix, this._satellites, eye, this._selectedSatelliteId);
 
-    this.updateHover(viewMatrix, projectionMatrix, eye);
+    this._updateHover(viewMatrix, projectionMatrix, eye);
   }
 
-  setSelectedSatellite(id: number | null) {
-    const previousSelectedId = this.selectedSatelliteId;
+  public setSelectedSatellite(id: number | null) {
+    const previousSelectedId = this._selectedSatelliteId;
 
     if (id === null) {
-      this.selectedSatelliteId = null;
-      this.orbitRenderer.clear();
-      if (this.onSelectChange && previousSelectedId !== null) {
-        this.onSelectChange(null);
+      this._selectedSatelliteId = null;
+      this._orbitRenderer.clear();
+      if (this._onSelectChange && previousSelectedId !== null) {
+        this._onSelectChange(null);
       }
       return;
     }
 
-    const sat = this.satellites.find((s) => s.id === id);
+    const sat = this._satellites.find((s) => s.id === id);
     if (!sat) {
-      this.selectedSatelliteId = null;
-      this.orbitRenderer.clear();
-      if (this.onSelectChange && previousSelectedId !== null) {
-        this.onSelectChange(null);
+      this._selectedSatelliteId = null;
+      this._orbitRenderer.clear();
+      if (this._onSelectChange && previousSelectedId !== null) {
+        this._onSelectChange(null);
       }
       return;
     }
 
-    this.selectedSatelliteId = id;
-    const orbitPath = sat.getOrbitalPath(this.orbitSegments);
-    this.orbitRenderer.setPath(orbitPath);
-    if (this.onSelectChange && previousSelectedId !== this.selectedSatelliteId) {
-      this.onSelectChange(sat);
+    this._selectedSatelliteId = id;
+    const orbitPath = sat.getOrbitalPath(this._orbitSegments);
+    this._orbitRenderer.setPath(orbitPath);
+    if (this._onSelectChange && previousSelectedId !== this._selectedSatelliteId) {
+      this._onSelectChange(sat);
     }
   }
 
-  selectHoveredSatellite() {
-    if (this.hoveredId === null) {
+  public selectHoveredSatellite() {
+    if (this._hoveredId === null) {
       this.setSelectedSatellite(null);
       return;
     }
 
-    this.setSelectedSatellite(this.hoveredId);
+    this.setSelectedSatellite(this._hoveredId);
   }
 
-  destroy() {
-    this.earthRenderer.destroy();
-    this.satelliteRenderer.destroy();
-    this.orbitRenderer.destroy();
-    this.overlayLabels?.destroy();
+  public destroy() {
+    this._earthRenderer.destroy();
+    this._satelliteRenderer.destroy();
+    this._orbitRenderer.destroy();
+    this._overlayLabels?.destroy();
   }
 
-  private updateHover(
+  private _updateHover(
     viewMatrix: Float32Array,
     projectionMatrix: Float32Array,
     eye: { x: number; y: number; z: number },
   ) {
-    if (!this.pointer) {
-      if (this.hoveredId !== null) {
-        this.hoveredId = null;
-        this.onHoverChange?.(null);
+    if (!this._pointer) {
+      if (this._hoveredId !== null) {
+        this._hoveredId = null;
+        this._onHoverChange?.(null);
       }
       return;
     }
 
-    mat4.multiply(this.viewProj, projectionMatrix, viewMatrix);
+    mat4.multiply(this._viewProj, projectionMatrix, viewMatrix);
 
-    const width = this.gl.canvas.width;
-    const height = this.gl.canvas.height;
-    const pointerX = this.pointer.x;
-    const pointerY = this.pointer.y;
+    const width = this._gl.canvas.width;
+    const height = this._gl.canvas.height;
+    const pointerX = this._pointer.x;
+    const pointerY = this._pointer.y;
     const thresholdPx = 15;
     const thresholdSq = thresholdPx * thresholdPx;
 
@@ -161,16 +161,16 @@ export class SceneRenderer {
     let closestName: string | null = null;
     let closestDistSq = Number.POSITIVE_INFINITY;
 
-    for (const sat of this.satellites) {
-      if (this.isOccludedByEarth(sat.position, eye)) continue;
+    for (const sat of this._satellites) {
+      if (this._isOccludedByEarth(sat.position, eye)) continue;
 
-      vec4.set(this.tempVec4, sat.position.x, sat.position.y, sat.position.z, 1.0);
-      vec4.transformMat4(this.tempVec4, this.tempVec4, this.viewProj);
-      const w = this.tempVec4[3];
+      vec4.set(this._tempVec4, sat.position.x, sat.position.y, sat.position.z, 1.0);
+      vec4.transformMat4(this._tempVec4, this._tempVec4, this._viewProj);
+      const w = this._tempVec4[3];
       if (w <= 0.0) continue; // Behind camera
 
-      const ndcX = this.tempVec4[0] / w;
-      const ndcY = this.tempVec4[1] / w;
+      const ndcX = this._tempVec4[0] / w;
+      const ndcY = this._tempVec4[1] / w;
       if (Math.abs(ndcX) > 1.0 || Math.abs(ndcY) > 1.0) continue;
 
       const screenX = (ndcX * 0.5 + 0.5) * width;
@@ -187,13 +187,13 @@ export class SceneRenderer {
       }
     }
 
-    if (closestId !== this.hoveredId) {
-      this.hoveredId = closestId;
-      this.onHoverChange?.(closestName);
+    if (closestId !== this._hoveredId) {
+      this._hoveredId = closestId;
+      this._onHoverChange?.(closestName);
     }
   }
 
-  private isOccludedByEarth(
+  private _isOccludedByEarth(
     satPos: { x: number; y: number; z: number },
     eye: { x: number; y: number; z: number },
   ): boolean {
@@ -211,6 +211,6 @@ export class SceneRenderer {
     const closestZ = eye.z + vz * t;
 
     const distSq = closestX * closestX + closestY * closestY + closestZ * closestZ;
-    return distSq < this.earthRadius * this.earthRadius;
+    return distSq < this._earthRadius * this._earthRadius;
   }
 }
