@@ -78,18 +78,16 @@ export class QuadSphereGenerator {
           const z = nz * radius;
 
           // Calculate UVs (Equirectangular / Spherical Mapping)
-          let u = 0.25 + (Math.atan2(nz, nx) / (2 * Math.PI));
+          let u = 0.5 + (Math.atan2(nz, nx) / (2 * Math.PI));
           u = 1.0 - u; // Flip horizontally so textures aren't mirrored
           const v = 0.5 - (Math.asin(ny) / Math.PI);
 
           // --- FIX START ---
-          // Check if we are on the "Left" face (Index 1: -X direction)
-          // This is the face that wraps around the date line.
-          if (face.origin[0] === -1 && face.origin[1] === 1 && face.origin[2] === -1) {
-            // After the flip, the seam occurs at high U; pull it back to keep continuity.
-            if (u > 0.5) {
-              u -= 1.0;
-            }
+          const wrapsDateLine = face.origin[0] === -1 && face.origin[1] === 1 && face.origin[2] === -1;
+          const isPolarFace = Math.abs(face.up[2]) > 0.5; // Top and bottom faces
+          // After the flip, the seam occurs at high U; pull it back to keep continuity.
+          if ((wrapsDateLine || isPolarFace) && u > 0.5) {
+            u -= 1.0;
           }
           
           // Store Interleaved Data

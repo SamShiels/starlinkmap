@@ -142,7 +142,7 @@ export class EarthRenderer {
     const now = new Date();
     const millisecondsInADay = 86400000;
 
-    const dayProgress = (now.getTime() % millisecondsInADay) / millisecondsInADay;
+    const dayProgress = (now.getTime() % millisecondsInADay) / millisecondsInADay - 0.25;
     const sunAngle = dayProgress * Math.PI * 2 - Math.PI / 2;
 
     const startOfYear = new Date(now.getFullYear(), 0, 0);
