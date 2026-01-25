@@ -27,13 +27,14 @@ async function fetchSatellites(): Promise<SatelliteData[]> {
   return data.satellites;
 }
 
-type Engine = {
+export type Engine = {
   gl: WebGL2RenderingContext;
   start: () => void;
   stop: () => void;
   destroy: () => void;
   selectSatellite: (id: number | null) => void;
   setOverlayContext: (ctx: CanvasRenderingContext2D | null) => void;
+  getSatellites: () => Satellite[];
 };
 
 type EngineOptions = {
@@ -175,5 +176,6 @@ export async function createEngine(
     destroy,
     selectSatellite: (id: number | null) => sceneRenderer.setSelectedSatellite(id),
     setOverlayContext: (ctx: CanvasRenderingContext2D | null) => sceneRenderer.setOverlayContext(ctx),
+    getSatellites: () => satellites,
   };
 }
