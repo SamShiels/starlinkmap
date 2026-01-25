@@ -108,6 +108,7 @@ async def get_satellites(limit: int = 0):
                 "id": norad_id,
                 "name": sat.name,
                 "orbital_radius_km": orbital_radius_km,
+                "speed_kms": speed,
                 "angular_velocity_rad_per_s": angular_velocity_rad_per_s,
                 "position": {
                     "x": pos_km[0],

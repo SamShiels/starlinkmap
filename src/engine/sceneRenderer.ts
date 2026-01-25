@@ -19,6 +19,7 @@ export class SceneRenderer {
   private viewProj = mat4.create();
   private tempVec4 = vec4.create();
   private onHoverChange?: (name: string | null) => void;
+  private onSelectChange?: (satellite: Satellite | null) => void;
   private readonly earthRadius = 0.7;
   private readonly orbitSegments = 128;
 
@@ -27,6 +28,7 @@ export class SceneRenderer {
     satellites: Satellite[],
     onHoverChange?: (name: string | null) => void,
     overlayCtx?: CanvasRenderingContext2D | null,
+    onSelectChange?: (satellite: Satellite | null) => void,
   ) {
     this.gl = gl;
     this.satellites = satellites;
@@ -35,6 +37,7 @@ export class SceneRenderer {
     this.orbitRenderer = new OrbitRenderer(gl);
     this.overlayLabels = overlayCtx ? new OverlayLabels(overlayCtx) : null;
     this.onHoverChange = onHoverChange;
+    this.onSelectChange = onSelectChange;
   }
 
   setPointer(position: { x: number; y: number } | null) {
@@ -82,9 +85,14 @@ export class SceneRenderer {
   }
 
   setSelectedSatellite(id: number | null) {
+    const previousSelectedId = this.selectedSatelliteId;
+
     if (id === null) {
       this.selectedSatelliteId = null;
       this.orbitRenderer.clear();
+      if (this.onSelectChange && previousSelectedId !== null) {
+        this.onSelectChange(null);
+      }
       return;
     }
 
@@ -92,12 +100,18 @@ export class SceneRenderer {
     if (!sat) {
       this.selectedSatelliteId = null;
       this.orbitRenderer.clear();
+      if (this.onSelectChange && previousSelectedId !== null) {
+        this.onSelectChange(null);
+      }
       return;
     }
 
     this.selectedSatelliteId = id;
     const orbitPath = sat.getOrbitalPath(this.orbitSegments);
     this.orbitRenderer.setPath(orbitPath);
+    if (this.onSelectChange && previousSelectedId !== this.selectedSatelliteId) {
+      this.onSelectChange(sat);
+    }
   }
 
   selectHoveredSatellite() {

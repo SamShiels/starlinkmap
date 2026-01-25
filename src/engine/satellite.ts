@@ -7,6 +7,8 @@ export class Satellite {
   private _orbitNormal: { x: number; y: number; z: number };
   private _orbitRadius: number;
   private _angularSpeed: number;
+  private _altitudeKm?: number;
+  private _speedKms?: number;
 
   public get id(): number {
     return this._id;
@@ -28,18 +30,41 @@ export class Satellite {
     return this._velocity;
   }
 
+  public get orbitRadius(): number {
+    return this._orbitRadius;
+  }
+
+  public get orbitNormal(): { x: number; y: number; z: number } {
+    return this._orbitNormal;
+  }
+
+  public get angularSpeed(): number {
+    return this._angularSpeed;
+  }
+
+  public get altitudeKm(): number | undefined {
+    return this._altitudeKm;
+  }
+
+  public get speedKms(): number | undefined {
+    return this._speedKms;
+  }
+
   constructor(
     id: number,
     name: string,
     position: { x: number; y: number; z: number },
     velocity: { x: number; y: number; z: number },
-    angularVelocityRadPerS: number
+    angularVelocityRadPerS: number,
+    meta?: { altitudeKm?: number; speedKms?: number }
   ) {
     this._id = id;
     this._name = name;
     this._initialPosition = { ...position };
     this._position = { ...position };
     this._velocity = { ...velocity };
+    this._altitudeKm = meta?.altitudeKm;
+    this._speedKms = meta?.speedKms;
 
     this._orbitRadius = Math.hypot(position.x, position.y, position.z);
     let orbitNormal = this._normalize(this._cross(position, velocity));

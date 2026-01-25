@@ -10,6 +10,8 @@ type SatelliteData = {
   name: string;
   orbital_radius_km: number;
   angular_velocity_rad_per_s: number;
+  altitude_km: number;
+  speed_kms: number;
   direction: { x: number; y: number; z: number };
   position: { x: number; y: number; z: number };
   velocity: { vx: number; vy: number; vz: number };
@@ -34,9 +36,15 @@ type Engine = {
   setOverlayContext: (ctx: CanvasRenderingContext2D | null) => void;
 };
 
+type EngineOptions = {
+  onHoverChange?: (name: string | null) => void;
+  onSelectChange?: (satellite: Satellite | null) => void;
+  overlayCanvas?: HTMLCanvasElement;
+};
+
 export async function createEngine(
   canvas: HTMLCanvasElement,
-  options: { onHoverChange?: (name: string | null) => void; overlayCanvas?: HTMLCanvasElement } = {},
+  options: EngineOptions = {},
 ): Promise<Engine> {
   const gl = getGLContext(canvas);
   gl.clearColor(0.01, 0.01, 0.1, 1.0);
@@ -58,11 +66,24 @@ export async function createEngine(
       y: data.velocity.vy * scale,
       z: data.velocity.vz * scale,
     };
-    return new Satellite(data.id, data.name, position, velocity, data.angular_velocity_rad_per_s);
+    return new Satellite(
+      data.id,
+      data.name,
+      position,
+      velocity,
+      data.angular_velocity_rad_per_s,
+      { altitudeKm: data.orbital_radius_km, speedKms: data.speed_kms },
+    );
   });
 
   const overlayCtx = options.overlayCanvas?.getContext('2d') ?? null;
-  const sceneRenderer = new SceneRenderer(gl, satellites, options.onHoverChange, overlayCtx);
+  const sceneRenderer = new SceneRenderer(
+    gl,
+    satellites,
+    options.onHoverChange,
+    overlayCtx,
+    options.onSelectChange,
+  );
 
   let rafId: number | null = null;
   let destroyed = false;
