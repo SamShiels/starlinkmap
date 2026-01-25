@@ -78,7 +78,7 @@ export class QuadSphereGenerator {
           const z = nz * radius;
 
           // Calculate UVs (Equirectangular / Spherical Mapping)
-          let u = 0.5 + (Math.atan2(nz, nx) / (2 * Math.PI));
+          let u = 0.25 + (Math.atan2(nz, nx) / (2 * Math.PI));
           u = 1.0 - u; // Flip horizontally so textures aren't mirrored
           const v = 0.5 - (Math.asin(ny) / Math.PI);
 
