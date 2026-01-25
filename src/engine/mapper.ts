@@ -46,7 +46,6 @@ export class Mapper {
       options.onSelectChange,
     );
 
-    this._controls = new CameraControls(canvas);
     this._canvasEl = this.gl.canvas as HTMLCanvasElement;
 
     this._canvasEl.addEventListener('mousemove', this._handleMouseMove);
@@ -55,6 +54,7 @@ export class Mapper {
     document.addEventListener('wheel', this._preventScroll, { passive: false });
 
     this._loadSatellites();
+    this._controls = new CameraControls(canvas);
   }
 
   public start() {
