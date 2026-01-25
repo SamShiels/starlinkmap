@@ -87,4 +87,12 @@ export class CameraControls {
     this.phi = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, this.phi));
     this.radius = Math.max(1.0, Math.min(10, this.radius));
   }
+
+  public getEyePosition(): { x: number; y: number; z: number } {
+    return {
+      x: this.radius * Math.cos(this.phi) * Math.cos(this.theta),
+      y: this.radius * Math.sin(this.phi),
+      z: this.radius * Math.cos(this.phi) * Math.sin(this.theta),
+    };
+  }
 }

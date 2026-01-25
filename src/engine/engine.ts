@@ -8,10 +8,6 @@ import { makeLookAtMatrix, makePerspectiveMatrix } from './helpers/matrices';
 type SatelliteData = {
   id: number;
   name: string;
-  latitude: number;
-  longitude: number;
-  altitude_km: number;
-  speed_kms: number;
   orbital_radius_km: number;
   angular_velocity_rad_per_s: number;
   direction: { x: number; y: number; z: number };
@@ -118,11 +114,7 @@ export async function createEngine(
 
     controls.update();
 
-    const eye = {
-      x: controls.radius * Math.cos(controls.phi) * Math.cos(controls.theta),
-      y: controls.radius * Math.sin(controls.phi),
-      z: controls.radius * Math.cos(controls.phi) * Math.sin(controls.theta),
-    };
+    const eye = controls.getEyePosition();
     const target = { x: 0, y: 0, z: 0 };
     makeLookAtMatrix(viewMatrix, eye, target);
 
