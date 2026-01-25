@@ -110,7 +110,7 @@ export class SceneRenderer {
     const height = this.gl.canvas.height;
     const pointerX = this.pointer.x;
     const pointerY = this.pointer.y;
-    const thresholdPx = 12;
+    const thresholdPx = 15;
     const thresholdSq = thresholdPx * thresholdPx;
 
     let closestId: number | null = null;

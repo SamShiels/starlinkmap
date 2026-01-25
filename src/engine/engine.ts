@@ -45,8 +45,6 @@ export async function createEngine(
   gl.clearColor(0.01, 0.01, 0.1, 1.0);
   gl.enable(gl.DEPTH_TEST);
 
-  const controls = new CameraControls(canvas);
-
   // Fetch real satellite data
   const satelliteData = await fetchSatellites();
   const satellites: Satellite[] = satelliteData.map(data => {
@@ -92,12 +90,17 @@ export async function createEngine(
 
   const handleClick = (event: MouseEvent) => {
     setPointerFromEvent(event);
-    sceneRenderer.selectHoveredSatellite();
+    console.log(controls.isDragging);
+    if (!controls.isDragging) {
+      sceneRenderer.selectHoveredSatellite();
+    }
   };
 
   canvasEl.addEventListener('mousemove', handleMouseMove);
   canvasEl.addEventListener('mouseleave', handleMouseLeave);
-  canvasEl.addEventListener('click', handleClick);
+  canvasEl.addEventListener('mouseup', handleClick);
+
+  const controls = new CameraControls(canvas);
 
   // Prevent page scrolling
   document.addEventListener('wheel', (event) => {
