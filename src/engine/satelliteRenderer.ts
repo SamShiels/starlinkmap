@@ -9,6 +9,7 @@ in vec2 aCorner;
 uniform mat4 uView;
 uniform mat4 uProjection;
 uniform float uSize;
+out vec2 vCorner;
 void main() {
   // Extract camera right/up vectors from view matrix columns
   vec3 right = vec3(uView[0][0], uView[1][0], uView[2][0]);
@@ -16,13 +17,19 @@ void main() {
 
   vec3 worldPos = aCenter + (right * aCorner.x + up * aCorner.y) * uSize;
   gl_Position = uProjection * uView * vec4(worldPos, 1.0);
+  vCorner = aCorner;
 }
 `;
 
 const POINT_FRAGMENT_SHADER = `#version 300 es
 precision highp float;
+in vec2 vCorner;
 out vec4 outColor;
 void main() {
+  float r2 = dot(vCorner, vCorner);
+  if (r2 > 1.0) {
+    discard;
+  }
   outColor = vec4(1.0, 1.0, 1.0, 1.0);
 }
 `;

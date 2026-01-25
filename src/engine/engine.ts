@@ -44,6 +44,7 @@ export async function createEngine(
   const gl = getGLContext(canvas);
   gl.clearColor(0.01, 0.01, 0.1, 1.0);
   gl.enable(gl.DEPTH_TEST);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
   // Fetch real satellite data
   const satelliteData = await fetchSatellites();

@@ -2,12 +2,14 @@ import { Satellite } from './satellite';
 import { EarthRenderer } from './earthRenderer';
 import { SatelliteRenderer } from './satelliteRenderer';
 import { OrbitRenderer } from './orbitRenderer';
+import { LabelRenderer } from './labelRenderer';
 
 export class SceneRenderer {
   private gl: WebGL2RenderingContext;
   private earthRenderer: EarthRenderer;
   private satelliteRenderer: SatelliteRenderer;
   private orbitRenderer: OrbitRenderer;
+  private labelRenderer: LabelRenderer;
   private satellites: Satellite[];
   private lastTime = 0;
   private pointer: { x: number; y: number } | null = null;
@@ -24,6 +26,7 @@ export class SceneRenderer {
     this.earthRenderer = new EarthRenderer(gl);
     this.satelliteRenderer = new SatelliteRenderer(gl, satellites);
     this.orbitRenderer = new OrbitRenderer(gl);
+    this.labelRenderer = new LabelRenderer(gl, satellites);
     this.onHoverChange = onHoverChange;
   }
 
@@ -53,6 +56,9 @@ export class SceneRenderer {
 
     // Render selected orbit
     this.orbitRenderer.render(viewMatrix, projectionMatrix);
+
+    // Render labels
+    this.labelRenderer.render(viewMatrix, projectionMatrix, this.satellites);
 
     this.updateHover(viewMatrix, projectionMatrix, eye);
   }
@@ -89,6 +95,7 @@ export class SceneRenderer {
     this.earthRenderer.destroy();
     this.satelliteRenderer.destroy();
     this.orbitRenderer.destroy();
+    this.labelRenderer.destroy();
   }
 
   private updateHover(
