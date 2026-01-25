@@ -47,14 +47,18 @@ export class Mapper {
     );
 
     this._canvasEl = this.gl.canvas as HTMLCanvasElement;
+    this._controls = new CameraControls(canvas);
 
     this._canvasEl.addEventListener('mousemove', this._handleMouseMove);
     this._canvasEl.addEventListener('mouseleave', this._handleMouseLeave);
     this._canvasEl.addEventListener('mouseup', this._handleClick);
+    this._canvasEl.addEventListener('touchstart', this._handleTouchStart, { passive: false });
+    this._canvasEl.addEventListener('touchmove', this._handleTouchMove, { passive: false });
+    this._canvasEl.addEventListener('touchend', this._handleTouchEnd);
+    this._canvasEl.addEventListener('touchcancel', this._handleTouchCancel);
     document.addEventListener('wheel', this._preventScroll, { passive: false });
 
     this._loadSatellites();
-    this._controls = new CameraControls(canvas);
   }
 
   public start() {
@@ -79,6 +83,10 @@ export class Mapper {
     this._canvasEl.removeEventListener('mousemove', this._handleMouseMove);
     this._canvasEl.removeEventListener('mouseleave', this._handleMouseLeave);
     this._canvasEl.removeEventListener('mouseup', this._handleClick);
+    this._canvasEl.removeEventListener('touchstart', this._handleTouchStart);
+    this._canvasEl.removeEventListener('touchmove', this._handleTouchMove);
+    this._canvasEl.removeEventListener('touchend', this._handleTouchEnd);
+    this._canvasEl.removeEventListener('touchcancel', this._handleTouchCancel);
     document.removeEventListener('wheel', this._preventScroll);
     this._sceneRenderer.destroy();
     this._destroyed = true;
@@ -110,7 +118,7 @@ export class Mapper {
       });
   }
 
-  private _setPointerFromEvent = (event: MouseEvent) => {
+  private _setPointerFromEvent = (event: { clientX: number; clientY: number }) => {
     const rect = this._canvasEl.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     const x = (event.clientX - rect.left) * dpr;
@@ -131,6 +139,38 @@ export class Mapper {
     if (!this._controls.isDragging) {
       this._sceneRenderer.selectHoveredSatellite();
     }
+  };
+
+  private _handleTouchStart = (event: TouchEvent) => {
+    if (event.touches.length > 0) {
+      const touch = event.touches[0];
+      this._setPointerFromEvent(touch);
+    }
+    event.preventDefault();
+  };
+
+  private _handleTouchMove = (event: TouchEvent) => {
+    if (event.touches.length > 0) {
+      const touch = event.touches[0];
+      this._setPointerFromEvent(touch);
+    }
+    event.preventDefault();
+  };
+
+  private _handleTouchEnd = (event: TouchEvent) => {
+    if (event.touches.length === 0) {
+      if (!this._controls.isDragging && !this._controls.isPinching) {
+        this._sceneRenderer.selectHoveredSatellite();
+      }
+      this._sceneRenderer.setPointer(null);
+    } else {
+      const touch = event.touches[0];
+      this._setPointerFromEvent(touch);
+    }
+  };
+
+  private _handleTouchCancel = () => {
+    this._sceneRenderer.setPointer(null);
   };
 
   private _render = (timeMs: number) => {

@@ -18,9 +18,15 @@ export class CameraControls {
   private _isDragging = false;
   private _lastMouseX = 0;
   private _lastMouseY = 0;
+  private _touchMode: 'none' | 'rotate' | 'pinch' = 'none';
+  private _lastTouchDistance = 0;
 
   public get isDragging(): boolean {
     return this._isDragging;
+  }
+
+  public get isPinching(): boolean {
+    return this._touchMode === 'pinch';
   }
 
   constructor(canvas: HTMLCanvasElement) {
@@ -72,6 +78,69 @@ export class CameraControls {
       this._radiusSmooth += event.deltaY * zoomSensitivity;
       event.preventDefault();
     });
+
+    this._canvas.addEventListener(
+      'touchstart',
+      (event) => {
+        if (event.touches.length === 1) {
+          const touch = event.touches[0];
+          this._touchMode = 'rotate';
+          this._mouseDown = true;
+          this._isDragging = false;
+          this._lastMouseX = touch.clientX;
+          this._lastMouseY = touch.clientY;
+        } else if (event.touches.length >= 2) {
+          this._touchMode = 'pinch';
+          this._mouseDown = false;
+          this._isDragging = false;
+          this._lastTouchDistance = this._touchDistance(event.touches[0], event.touches[1]);
+        }
+        event.preventDefault();
+      },
+      { passive: false },
+    );
+
+    this._canvas.addEventListener(
+      'touchmove',
+      (event) => {
+        if (this._touchMode === 'rotate' && event.touches.length === 1) {
+          const touch = event.touches[0];
+          const deltaX = touch.clientX - this._lastMouseX;
+          const deltaY = touch.clientY - this._lastMouseY;
+
+          if (!this._isDragging) {
+            const distSq = deltaX * deltaX + deltaY * deltaY;
+            if (distSq >= DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX) {
+              this._isDragging = true;
+            }
+          }
+
+          const sensitivity = SENS;
+          this._thetaSmooth += deltaX * sensitivity;
+          this._phiSmooth += deltaY * sensitivity;
+          this._lastMouseX = touch.clientX;
+          this._lastMouseY = touch.clientY;
+        } else if (this._touchMode === 'pinch' && event.touches.length >= 2) {
+          const distance = this._touchDistance(event.touches[0], event.touches[1]);
+          const delta = distance - this._lastTouchDistance;
+          const zoomSensitivity = SENS * 0.5;
+          this._radiusSmooth += delta * zoomSensitivity;
+          this._lastTouchDistance = distance;
+        }
+        event.preventDefault();
+      },
+      { passive: false },
+    );
+
+    const endTouch = () => {
+      this._touchMode = 'none';
+      this._mouseDown = false;
+      this._isDragging = false;
+      this._lastTouchDistance = 0;
+    };
+
+    this._canvas.addEventListener('touchend', endTouch);
+    this._canvas.addEventListener('touchcancel', endTouch);
   }
 
   public update() {
@@ -94,5 +163,11 @@ export class CameraControls {
       y: this.radius * Math.sin(this.phi),
       z: this.radius * Math.cos(this.phi) * Math.sin(this.theta),
     };
+  }
+
+  private _touchDistance(a: Touch, b: Touch): number {
+    const dx = a.clientX - b.clientX;
+    const dy = a.clientY - b.clientY;
+    return Math.hypot(dx, dy);
   }
 }
