@@ -34,9 +34,9 @@ void main() {
   vec3 normal = normalize(vNormal);
   vec3 sunDir = normalize(uSunDirection);
 
-  float sunAmount = clamp(dot(normal, sunDir), 0.0, 1.0);
+  float sunAmount = clamp(dot(normal, sunDir) * 2.0, 0.0, 1.0);
 
-  vec3 dayColor = texture(uDayTexture, vUv).rgb;
+  vec3 dayColor = min(texture(uDayTexture, vUv).rgb, 0.8) - 0.1;
   vec3 nightColor = min(texture(uNightTexture, vUv).rgb, 0.3);
 
   vec3 color = mix(nightColor, dayColor, sunAmount);
@@ -151,7 +151,7 @@ export class EarthRenderer {
     const msPerYear = startOfNextYear.getTime() - startOfYear.getTime();
     const yearProgress = msIntoYear / msPerYear;
 
-    const axialTilt = (23.44 * Math.PI) / 180;
+    const axialTilt = -(23.44 * Math.PI) / 180;
     const declination = Math.sin(yearProgress * Math.PI * 2) * axialTilt;
 
     const x = Math.cos(declination) * Math.cos(sunAngle);
